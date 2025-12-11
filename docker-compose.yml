@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  analytics-ui:
+    build: .
+    container_name: analytics-ui
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=https://leads.photowaermo.de/analytics
+    networks:
+      - platform_net
+
+networks:
+  platform_net:
+    external: true
+    name: platform_platform_net
