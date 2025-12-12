@@ -17,7 +17,7 @@ export function FunnelChart({ data }: FunnelChartProps) {
 
   return (
     <div className="rounded-xl border border-gray-200/50 bg-white/70 p-6 backdrop-blur-sm shadow-sm">
-      <h3 className="mb-6 text-lg font-semibold text-gray-900">Conversion Funnel</h3>
+      <h3 className="mb-6 text-lg font-semibold text-gray-900">Konversionstrichter</h3>
       <div className="space-y-3">
         {data.map((step, index) => {
           const widthPercent = (step.count / maxCount) * 100;

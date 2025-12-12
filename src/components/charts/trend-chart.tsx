@@ -11,6 +11,7 @@ import {
   Legend,
 } from "recharts";
 import { format, parseISO } from "date-fns";
+import { de } from "date-fns/locale";
 
 interface TrendChartProps {
   data: { date: string; leads: number; sales: number }[];
@@ -19,12 +20,14 @@ interface TrendChartProps {
 export function TrendChart({ data }: TrendChartProps) {
   const formattedData = data.map((item) => ({
     ...item,
-    dateLabel: format(parseISO(item.date), "MMM d"),
+    dateLabel: format(parseISO(item.date), "d. MMM", { locale: de }),
+    Leads: item.leads,
+    Verkäufe: item.sales,
   }));
 
   return (
     <div className="rounded-xl border border-gray-200/50 bg-white/70 p-6 backdrop-blur-sm shadow-sm">
-      <h3 className="mb-4 text-lg font-semibold text-gray-900">Leads vs Sales Trend</h3>
+      <h3 className="mb-4 text-lg font-semibold text-gray-900">Leads vs. Verkäufe Trend</h3>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={formattedData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
@@ -42,7 +45,7 @@ export function TrendChart({ data }: TrendChartProps) {
             <Legend />
             <Line
               type="monotone"
-              dataKey="leads"
+              dataKey="Leads"
               stroke="#A1BF4F"
               strokeWidth={2}
               dot={{ fill: "#A1BF4F", strokeWidth: 2 }}
@@ -50,7 +53,7 @@ export function TrendChart({ data }: TrendChartProps) {
             />
             <Line
               type="monotone"
-              dataKey="sales"
+              dataKey="Verkäufe"
               stroke="#3A9E90"
               strokeWidth={2}
               dot={{ fill: "#3A9E90", strokeWidth: 2 }}
