@@ -8,7 +8,7 @@ interface ErrorCardProps {
   onRetry?: () => void;
 }
 
-export function ErrorCard({ message = "Failed to load data", onRetry }: ErrorCardProps) {
+export function ErrorCard({ message = "Daten konnten nicht geladen werden", onRetry }: ErrorCardProps) {
   return (
     <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
       <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-3" />
@@ -16,7 +16,7 @@ export function ErrorCard({ message = "Failed to load data", onRetry }: ErrorCar
       {onRetry && (
         <Button variant="outline" size="sm" onClick={onRetry}>
           <RefreshCw className="h-4 w-4 mr-2" />
-          Retry
+          Erneut versuchen
         </Button>
       )}
     </div>

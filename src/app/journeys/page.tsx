@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
+import { de } from "date-fns/locale";
 import { Eye } from "lucide-react";
 import { useJourneys, useJourneyDetail } from "@/lib/queries";
 import {
@@ -30,6 +31,14 @@ const statusColors: Record<string, string> = {
   lost: "bg-red-100 text-red-800",
 };
 
+const statusLabels: Record<string, string> = {
+  new: "Neu",
+  contacted: "Kontaktiert",
+  qualified: "Qualifiziert",
+  won: "Gewonnen",
+  lost: "Verloren",
+};
+
 export default function JourneysPage() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const { data: leads, isLoading, isError, refetch } = useJourneys(50, 0);
@@ -38,28 +47,28 @@ export default function JourneysPage() {
   if (isError) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Lead Journeys</h1>
-        <ErrorCard message="Failed to load leads" onRetry={() => refetch()} />
+        <h1 className="text-2xl font-bold text-gray-900">Lead-Verlauf</h1>
+        <ErrorCard message="Leads konnten nicht geladen werden" onRetry={() => refetch()} />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Lead Journeys</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Lead-Verlauf</h1>
 
       <div className="rounded-xl border border-gray-200/50 bg-white/70 backdrop-blur-sm shadow-sm overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-gray-500">Loading leads...</div>
+          <div className="p-8 text-center text-gray-500">Leads werden geladen...</div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Source</TableHead>
+                <TableHead>E-Mail</TableHead>
+                <TableHead>Quelle</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Erstellt am</TableHead>
+                <TableHead className="text-right">Aktionen</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -69,11 +78,11 @@ export default function JourneysPage() {
                   <TableCell>{lead.source_name}</TableCell>
                   <TableCell>
                     <Badge className={statusColors[lead.crm_status] || "bg-gray-100 text-gray-800"}>
-                      {lead.crm_status}
+                      {statusLabels[lead.crm_status] || lead.crm_status}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {format(parseISO(lead.created_at), "MMM d, yyyy HH:mm")}
+                    {format(parseISO(lead.created_at), "d. MMM yyyy, HH:mm", { locale: de })}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
@@ -82,7 +91,7 @@ export default function JourneysPage() {
                       onClick={() => setSelectedLeadId(lead.id)}
                     >
                       <Eye className="h-4 w-4 mr-1" />
-                      View Journey
+                      Verlauf anzeigen
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -90,7 +99,7 @@ export default function JourneysPage() {
               {leads?.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                    No leads found
+                    Keine Leads gefunden
                   </TableCell>
                 </TableRow>
               )}
@@ -103,35 +112,35 @@ export default function JourneysPage() {
       <Dialog open={!!selectedLeadId} onOpenChange={() => setSelectedLeadId(null)}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Lead Journey</DialogTitle>
+            <DialogTitle>Lead-Verlauf</DialogTitle>
           </DialogHeader>
 
           {detailLoading ? (
-            <div className="py-8 text-center text-gray-500">Loading journey...</div>
+            <div className="py-8 text-center text-gray-500">Verlauf wird geladen...</div>
           ) : detailError ? (
             <div className="py-4">
-              <ErrorCard message="Failed to load journey details" />
+              <ErrorCard message="Verlaufsdetails konnten nicht geladen werden" />
             </div>
           ) : journeyDetail ? (
             <div className="space-y-6">
               {/* Lead Info */}
               <div className="rounded-lg bg-gray-50 p-4">
-                <h4 className="text-sm font-medium text-gray-500 mb-2">Lead Information</h4>
+                <h4 className="text-sm font-medium text-gray-500 mb-2">Lead-Informationen</h4>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-500">Email:</span>{" "}
+                    <span className="text-gray-500">E-Mail:</span>{" "}
                     <span className="font-medium">{journeyDetail.lead.email}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">UTM Source:</span>{" "}
-                    <span className="font-medium">{journeyDetail.lead.utm_source || "N/A"}</span>
+                    <span className="text-gray-500">UTM-Quelle:</span>{" "}
+                    <span className="font-medium">{journeyDetail.lead.utm_source || "K.A."}</span>
                   </div>
                 </div>
               </div>
 
               {/* Timeline */}
               <div>
-                <h4 className="text-sm font-medium text-gray-500 mb-4">Timeline</h4>
+                <h4 className="text-sm font-medium text-gray-500 mb-4">Zeitverlauf</h4>
                 <div className="relative">
                   <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200" />
                   <div className="space-y-4">
@@ -152,7 +161,7 @@ export default function JourneysPage() {
                               {event.type.replace(/_/g, " ")}
                             </Badge>
                             <span className="text-xs text-gray-500">
-                              {format(parseISO(event.timestamp), "MMM d, HH:mm")}
+                              {format(parseISO(event.timestamp), "d. MMM, HH:mm", { locale: de })}
                             </span>
                           </div>
                           <p className="mt-1 text-sm text-gray-600">{event.details}</p>

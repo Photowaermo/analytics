@@ -33,15 +33,15 @@ export default function CostsPage() {
   if (overviewError) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Costs & ROAS</h1>
-        <ErrorCard message="Failed to load cost data" onRetry={() => refetchOverview()} />
+        <h1 className="text-2xl font-bold text-gray-900">Kosten & ROAS</h1>
+        <ErrorCard message="Kostendaten konnten nicht geladen werden" onRetry={() => refetchOverview()} />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Costs & ROAS</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Kosten & ROAS</h1>
 
       {/* Main KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -55,22 +55,22 @@ export default function CostsPage() {
         ) : overview ? (
           <>
             <KpiCard
-              title="Total Marketing Spend"
+              title="Marketing-Ausgaben"
               value={formatCurrency(overview.total_spend)}
               icon={DollarSign}
             />
             <KpiCard
-              title="Total Revenue"
+              title="Gesamtumsatz"
               value={formatCurrency(overview.total_revenue)}
               icon={TrendingUp}
             />
             <KpiCard
-              title="Profit"
+              title="Gewinn"
               value={formatCurrency(overview.profit)}
               icon={PiggyBank}
             />
             <KpiCard
-              title="Margin"
+              title="Marge"
               value={formatPercent(overview.margin)}
               icon={Percent}
             />
@@ -89,19 +89,19 @@ export default function CostsPage() {
         ) : overview ? (
           <>
             <KpiCard
-              title="Overall ROAS"
+              title="Gesamt-ROAS"
               value={`${overview.roas.toFixed(2)}x`}
-              subtitle={overview.roas >= 3 ? "Excellent performance" : overview.roas >= 1 ? "Positive ROI" : "Below breakeven"}
+              subtitle={overview.roas >= 3 ? "Hervorragende Performance" : overview.roas >= 1 ? "Positiver ROI" : "Unter Rentabilität"}
             />
             <KpiCard
-              title="Customer Acquisition Cost"
+              title="Kundenakquisitionskosten"
               value={formatCurrency(cac)}
-              subtitle="Cost per sale"
+              subtitle="Kosten pro Verkauf"
             />
             <KpiCard
-              title="Cost Per Lead"
+              title="Kosten pro Lead"
               value={formatCurrency(overview.cpl)}
-              subtitle="Average across all channels"
+              subtitle="Durchschnitt aller Kanäle"
             />
           </>
         ) : null}
@@ -112,35 +112,35 @@ export default function CostsPage() {
         {providersLoading ? (
           <BarChartSkeleton />
         ) : roasChartData.length > 0 ? (
-          <BarChartCard data={roasChartData} title="ROAS by Provider" />
+          <BarChartCard data={roasChartData} title="ROAS nach Anbieter" />
         ) : null}
 
         {/* Profitability Summary */}
         {overview && (
           <div className="rounded-xl border border-gray-200/50 bg-white/70 p-6 backdrop-blur-sm shadow-sm">
-            <h3 className="mb-4 text-lg font-semibold text-gray-900">Profitability Summary</h3>
+            <h3 className="mb-4 text-lg font-semibold text-gray-900">Rentabilitätsübersicht</h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                <span className="text-gray-600">Revenue</span>
+                <span className="text-gray-600">Umsatz</span>
                 <span className="font-semibold text-green-600">
                   +{formatCurrency(overview.total_revenue)}
                 </span>
               </div>
               <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                <span className="text-gray-600">Marketing Spend</span>
+                <span className="text-gray-600">Marketing-Ausgaben</span>
                 <span className="font-semibold text-red-600">
                   -{formatCurrency(overview.total_spend)}
                 </span>
               </div>
               <div className="flex justify-between items-center py-3">
-                <span className="text-gray-900 font-medium">Net Profit</span>
+                <span className="text-gray-900 font-medium">Nettogewinn</span>
                 <span className={`text-xl font-bold ${overview.profit >= 0 ? "text-green-600" : "text-red-600"}`}>
                   {formatCurrency(overview.profit)}
                 </span>
               </div>
               <div className="mt-4 p-4 rounded-lg bg-gray-50">
                 <div className="text-sm text-gray-500">
-                  For every {formatCurrency(1)} spent, you earn {formatCurrency(overview.roas)} back.
+                  Für jeden {formatCurrency(1)} Ausgabe erhalten Sie {formatCurrency(overview.roas)} zurück.
                 </div>
               </div>
             </div>

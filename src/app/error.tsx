@@ -19,13 +19,13 @@ export default function Error({
     <div className="flex min-h-[50vh] flex-col items-center justify-center">
       <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center max-w-md">
         <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Something went wrong</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Ein Fehler ist aufgetreten</h2>
         <p className="text-gray-600 mb-6">
-          {error.message || "An unexpected error occurred. Please try again."}
+          {error.message || "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut."}
         </p>
         <Button onClick={reset} variant="outline">
           <RefreshCw className="h-4 w-4 mr-2" />
-          Try again
+          Erneut versuchen
         </Button>
       </div>
     </div>

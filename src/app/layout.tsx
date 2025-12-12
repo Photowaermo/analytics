@@ -9,12 +9,12 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Analytics Dashboard",
-  description: "Solar lead generation analytics dashboard for marketing team and management",
+  description: "Solar-Leadgenerierung Analytics Dashboard für Marketing-Team und Management",
   keywords: ["analytics", "dashboard", "solar", "leads", "ROAS", "marketing"],
   authors: [{ name: "Photowaermo" }],
   openGraph: {
     title: "Analytics Dashboard",
-    description: "Solar lead generation analytics dashboard",
+    description: "Solar-Leadgenerierung Analytics Dashboard",
     type: "website",
   },
 };
@@ -25,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="de">
       <body className={inter.className}>
         <Providers>
           <div className="flex min-h-screen bg-surface">

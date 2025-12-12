@@ -32,15 +32,15 @@ export default function ProvidersPage() {
   if (isError) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Provider Performance</h1>
-        <ErrorCard message="Failed to load provider data" onRetry={() => refetch()} />
+        <h1 className="text-2xl font-bold text-gray-900">Anbieter-Performance</h1>
+        <ErrorCard message="Anbieterdaten konnten nicht geladen werden" onRetry={() => refetch()} />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Provider Performance</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Anbieter-Performance</h1>
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -53,10 +53,10 @@ export default function ProvidersPage() {
           </>
         ) : (
           <>
-            <KpiCard title="Total Leads (Providers)" value={formatNumber(totalLeads)} />
-            <KpiCard title="Total Sales" value={formatNumber(totalSales)} />
-            <KpiCard title="Total Cost" value={formatCurrency(totalCost)} />
-            <KpiCard title="Avg. CPL" value={formatCurrency(avgCpl)} />
+            <KpiCard title="Leads gesamt (Anbieter)" value={formatNumber(totalLeads)} />
+            <KpiCard title="Verkäufe gesamt" value={formatNumber(totalSales)} />
+            <KpiCard title="Gesamtkosten" value={formatCurrency(totalCost)} />
+            <KpiCard title="Durchschn. CPL" value={formatCurrency(avgCpl)} />
           </>
         )}
       </div>
@@ -66,23 +66,23 @@ export default function ProvidersPage() {
         {isLoading ? (
           <BarChartSkeleton />
         ) : cplChartData.length > 0 ? (
-          <BarChartCard data={cplChartData} title="Cost Per Lead by Provider" horizontal />
+          <BarChartCard data={cplChartData} title="Kosten pro Lead nach Anbieter" horizontal />
         ) : null}
 
         {/* Provider Table */}
         <div className="rounded-xl border border-gray-200/50 bg-white/70 backdrop-blur-sm shadow-sm overflow-hidden">
           <div className="p-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Provider Details</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Anbieter-Details</h3>
           </div>
           {isLoading ? (
-            <div className="p-8 text-center text-gray-500">Loading...</div>
+            <div className="p-8 text-center text-gray-500">Laden...</div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Provider</TableHead>
+                  <TableHead>Anbieter</TableHead>
                   <TableHead className="text-right">Leads</TableHead>
-                  <TableHead className="text-right">Sales</TableHead>
+                  <TableHead className="text-right">Verkäufe</TableHead>
                   <TableHead className="text-right">CPL</TableHead>
                   <TableHead className="text-right">ROAS</TableHead>
                 </TableRow>
@@ -112,7 +112,7 @@ export default function ProvidersPage() {
                 {providers?.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                      No provider data available
+                      Keine Anbieterdaten verfügbar
                     </TableCell>
                   </TableRow>
                 )}

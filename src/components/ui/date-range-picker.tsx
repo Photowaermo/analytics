@@ -3,15 +3,16 @@
 import { useState } from "react";
 import { Calendar } from "lucide-react";
 import { format } from "date-fns";
+import { de } from "date-fns/locale";
 import { useDateRange, type DatePreset } from "@/lib/date-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const presets: { label: string; value: DatePreset }[] = [
-  { label: "Today", value: "today" },
-  { label: "Yesterday", value: "yesterday" },
-  { label: "Last 7 days", value: "7d" },
-  { label: "Last 30 days", value: "30d" },
+  { label: "Heute", value: "today" },
+  { label: "Gestern", value: "yesterday" },
+  { label: "Letzte 7 Tage", value: "7d" },
+  { label: "Letzte 30 Tage", value: "30d" },
 ];
 
 export function DateRangePicker() {
@@ -28,7 +29,7 @@ export function DateRangePicker() {
   const formatDateRange = () => {
     const start = new Date(dateRange.startDate);
     const end = new Date(dateRange.endDate);
-    return `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`;
+    return `${format(start, "d. MMM", { locale: de })} - ${format(end, "d. MMM yyyy", { locale: de })}`;
   };
 
   return (
@@ -62,7 +63,7 @@ export function DateRangePicker() {
             ))}
             <hr className="my-2 border-gray-200" />
             <div className="px-3 py-2">
-              <label className="block text-xs font-medium text-gray-500 mb-1">Start</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Startdatum</label>
               <input
                 type="date"
                 value={dateRange.startDate}
@@ -74,7 +75,7 @@ export function DateRangePicker() {
               />
             </div>
             <div className="px-3 py-2">
-              <label className="block text-xs font-medium text-gray-500 mb-1">End</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Enddatum</label>
               <input
                 type="date"
                 value={dateRange.endDate}

@@ -19,15 +19,15 @@ export default function FunnelPage() {
   if (isError) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Funnel Analysis</h1>
-        <ErrorCard message="Failed to load funnel data" onRetry={() => refetch()} />
+        <h1 className="text-2xl font-bold text-gray-900">Funnel-Analyse</h1>
+        <ErrorCard message="Funnel-Daten konnten nicht geladen werden" onRetry={() => refetch()} />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Funnel Analysis</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Funnel-Analyse</h1>
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -40,10 +40,10 @@ export default function FunnelPage() {
           </>
         ) : (
           <>
-            <KpiCard title="Page Views" value={formatNumber(totalVisitors)} />
-            <KpiCard title="Leads Generated" value={formatNumber(totalLeads)} />
-            <KpiCard title="Sales Closed" value={formatNumber(totalSales)} />
-            <KpiCard title="Overall Conversion" value={formatPercent(overallConversion)} />
+            <KpiCard title="Seitenaufrufe" value={formatNumber(totalVisitors)} />
+            <KpiCard title="Generierte Leads" value={formatNumber(totalLeads)} />
+            <KpiCard title="Abgeschlossene Verkäufe" value={formatNumber(totalSales)} />
+            <KpiCard title="Gesamtkonversion" value={formatPercent(overallConversion)} />
           </>
         )}
       </div>
@@ -56,7 +56,7 @@ export default function FunnelPage() {
       {/* Drop-off Analysis */}
       {funnel && funnel.length > 1 && (
         <div className="rounded-xl border border-gray-200/50 bg-white/70 p-6 backdrop-blur-sm shadow-sm">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">Drop-off Analysis</h3>
+          <h3 className="mb-4 text-lg font-semibold text-gray-900">Absprung-Analyse</h3>
           <div className="space-y-3">
             {funnel.slice(1).map((step, index) => {
               const prevStep = funnel[index];

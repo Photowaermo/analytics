@@ -39,7 +39,7 @@ export default function SettingsPage() {
   };
 
   const handleAddProvider = () => {
-    const newProvider = prompt("Enter provider name:");
+    const newProvider = prompt("Anbieter-Name eingeben:");
     if (newProvider && !prices[newProvider.toLowerCase()]) {
       setPrices((prev) => ({ ...prev, [newProvider.toLowerCase()]: "0" }));
       setHasChanges(true);
@@ -49,28 +49,28 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Einstellungen</h1>
         <Button onClick={handleSave} disabled={!hasChanges || updateSettings.isPending}>
           {updateSettings.isPending ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
             <Save className="h-4 w-4 mr-2" />
           )}
-          Save Changes
+          Änderungen speichern
         </Button>
       </div>
 
       {/* Provider Prices */}
       <Card>
         <CardHeader>
-          <CardTitle>Provider Prices</CardTitle>
+          <CardTitle>Anbieter-Preise</CardTitle>
           <CardDescription>
-            Set the cost per lead for each provider. These values are used to calculate provider-specific metrics.
+            Legen Sie die Kosten pro Lead für jeden Anbieter fest. Diese Werte werden zur Berechnung anbieterspezifischer Metriken verwendet.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="py-8 text-center text-gray-500">Loading settings...</div>
+            <div className="py-8 text-center text-gray-500">Einstellungen werden geladen...</div>
           ) : (
             <div className="space-y-4">
               {Object.entries(prices).map(([provider, price]) => (
@@ -91,12 +91,12 @@ export default function SettingsPage() {
                       className="pl-8"
                     />
                   </div>
-                  <span className="text-sm text-gray-500">per lead</span>
+                  <span className="text-sm text-gray-500">pro Lead</span>
                 </div>
               ))}
 
               <Button variant="outline" onClick={handleAddProvider} className="mt-4">
-                + Add Provider
+                + Anbieter hinzufügen
               </Button>
             </div>
           )}
@@ -106,35 +106,35 @@ export default function SettingsPage() {
       {/* Success Message */}
       {updateSettings.isSuccess && (
         <div className="rounded-lg bg-green-50 border border-green-200 p-4">
-          <p className="text-sm text-green-800">Settings saved successfully!</p>
+          <p className="text-sm text-green-800">Einstellungen erfolgreich gespeichert!</p>
         </div>
       )}
 
       {/* Error Message */}
       {updateSettings.isError && (
         <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-          <p className="text-sm text-red-800">Failed to save settings. Please try again.</p>
+          <p className="text-sm text-red-800">Einstellungen konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.</p>
         </div>
       )}
 
       {/* Info */}
       <Card>
         <CardHeader>
-          <CardTitle>API Configuration</CardTitle>
+          <CardTitle>API-Konfiguration</CardTitle>
           <CardDescription>
-            API endpoint and authentication are configured at the server level.
+            API-Endpunkt und Authentifizierung werden auf Server-Ebene konfiguriert.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between py-2 border-b border-gray-100">
-              <span className="text-gray-500">API Base URL</span>
+              <span className="text-gray-500">API-Basis-URL</span>
               <code className="text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
                 https://leads.photowaermo.de/analytics
               </code>
             </div>
             <div className="flex justify-between py-2">
-              <span className="text-gray-500">Authentication</span>
+              <span className="text-gray-500">Authentifizierung</span>
               <span className="text-gray-700">Basic Auth (Gateway)</span>
             </div>
           </div>

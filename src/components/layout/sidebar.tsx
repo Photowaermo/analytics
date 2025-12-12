@@ -19,14 +19,14 @@ import {
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/", label: "Overview", icon: LayoutDashboard },
+  { href: "/", label: "Übersicht", icon: LayoutDashboard },
   { href: "/funnel", label: "Funnel", icon: Filter },
-  { href: "/journeys", label: "Journeys", icon: Route },
+  { href: "/journeys", label: "Lead-Verlauf", icon: Route },
   { href: "/attribution", label: "Attribution", icon: Target },
-  { href: "/providers", label: "Providers", icon: Users },
-  { href: "/costs", label: "Costs & ROAS", icon: DollarSign },
-  { href: "/health", label: "Health", icon: Activity },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/providers", label: "Anbieter", icon: Users },
+  { href: "/costs", label: "Kosten & ROAS", icon: DollarSign },
+  { href: "/health", label: "Systemstatus", icon: Activity },
+  { href: "/settings", label: "Einstellungen", icon: Settings },
 ];
 
 export function Sidebar() {
@@ -39,7 +39,7 @@ export function Sidebar() {
       <button
         onClick={() => setIsOpen(true)}
         className="fixed top-4 left-4 z-50 lg:hidden p-2 rounded-lg bg-white shadow-md border border-gray-200"
-        aria-label="Open menu"
+        aria-label="Menü öffnen"
       >
         <Menu className="h-5 w-5 text-gray-600" />
       </button>
@@ -68,7 +68,7 @@ export function Sidebar() {
           <button
             onClick={() => setIsOpen(false)}
             className="lg:hidden p-1 rounded hover:bg-gray-100"
-            aria-label="Close menu"
+            aria-label="Menü schließen"
           >
             <X className="h-5 w-5 text-gray-500" />
           </button>

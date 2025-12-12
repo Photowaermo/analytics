@@ -38,27 +38,27 @@ export default function AttributionPage() {
 
       <Tabs value={level} onValueChange={(v) => setLevel(v as Level)}>
         <TabsList>
-          <TabsTrigger value="campaign">Campaigns</TabsTrigger>
-          <TabsTrigger value="adset">Ad Sets</TabsTrigger>
-          <TabsTrigger value="ad">Ads / Creatives</TabsTrigger>
+          <TabsTrigger value="campaign">Kampagnen</TabsTrigger>
+          <TabsTrigger value="adset">Anzeigengruppen</TabsTrigger>
+          <TabsTrigger value="ad">Anzeigen / Creatives</TabsTrigger>
         </TabsList>
 
         <TabsContent value={level} className="mt-6">
           {isError ? (
-            <ErrorCard message="Failed to load attribution data" onRetry={() => refetch()} />
+            <ErrorCard message="Attributionsdaten konnten nicht geladen werden" onRetry={() => refetch()} />
           ) : (
             <div className="rounded-xl border border-gray-200/50 bg-white/70 backdrop-blur-sm shadow-sm overflow-hidden">
               {isLoading ? (
-                <div className="p-8 text-center text-gray-500">Loading...</div>
+                <div className="p-8 text-center text-gray-500">Laden...</div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
                       {level === "ad" && <TableHead>Creative</TableHead>}
-                      <TableHead className="text-right">Spend</TableHead>
+                      <TableHead className="text-right">Ausgaben</TableHead>
                       <TableHead className="text-right">Leads</TableHead>
-                      <TableHead className="text-right">Sales</TableHead>
+                      <TableHead className="text-right">Verkäufe</TableHead>
                       <TableHead className="text-right">CPL</TableHead>
                       <TableHead className="text-right">ROAS</TableHead>
                     </TableRow>
@@ -72,7 +72,7 @@ export default function AttributionPage() {
                             {index === 0 && topRoas > 0 && (
                               <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
                                 <Trophy className="h-3 w-3 mr-1" />
-                                Winner
+                                Gewinner
                               </Badge>
                             )}
                           </div>
@@ -90,7 +90,7 @@ export default function AttributionPage() {
                               />
                             ) : (
                               <div className="h-12 w-12 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">
-                                N/A
+                                K.A.
                               </div>
                             )}
                           </TableCell>
@@ -117,7 +117,7 @@ export default function AttributionPage() {
                     {sortedData.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={level === "ad" ? 7 : 6} className="text-center py-8 text-gray-500">
-                          No data available
+                          Keine Daten verfügbar
                         </TableCell>
                       </TableRow>
                     )}

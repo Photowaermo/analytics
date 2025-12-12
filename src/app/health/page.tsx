@@ -18,17 +18,17 @@ export default function HealthPage() {
   const isDbConnected = health?.db === "connected";
 
   const formatLastUpdated = () => {
-    if (!dataUpdatedAt) return "Never";
-    return new Date(dataUpdatedAt).toLocaleTimeString();
+    if (!dataUpdatedAt) return "Nie";
+    return new Date(dataUpdatedAt).toLocaleTimeString("de-DE");
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">System Health</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Systemstatus</h1>
         <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-          Refresh
+          Aktualisieren
         </Button>
       </div>
 
@@ -38,25 +38,25 @@ export default function HealthPage() {
           {isLoading ? (
             <div className="text-center">
               <RefreshCw className="h-16 w-16 text-gray-400 animate-spin mx-auto" />
-              <p className="mt-4 text-gray-500">Checking system status...</p>
+              <p className="mt-4 text-gray-500">Systemstatus wird überprüft...</p>
             </div>
           ) : isError ? (
             <div className="text-center">
               <XCircle className="h-16 w-16 text-red-500 mx-auto" />
-              <p className="mt-4 text-xl font-semibold text-red-600">System Unreachable</p>
-              <p className="mt-2 text-gray-500">Unable to connect to the API</p>
+              <p className="mt-4 text-xl font-semibold text-red-600">System nicht erreichbar</p>
+              <p className="mt-2 text-gray-500">Verbindung zur API nicht möglich</p>
             </div>
           ) : isHealthy ? (
             <div className="text-center">
               <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
-              <p className="mt-4 text-xl font-semibold text-green-600">All Systems Operational</p>
-              <p className="mt-2 text-gray-500">Last checked: {formatLastUpdated()}</p>
+              <p className="mt-4 text-xl font-semibold text-green-600">Alle Systeme betriebsbereit</p>
+              <p className="mt-2 text-gray-500">Zuletzt geprüft: {formatLastUpdated()}</p>
             </div>
           ) : (
             <div className="text-center">
               <XCircle className="h-16 w-16 text-yellow-500 mx-auto" />
-              <p className="mt-4 text-xl font-semibold text-yellow-600">Degraded Performance</p>
-              <p className="mt-2 text-gray-500">Some services may be affected</p>
+              <p className="mt-4 text-xl font-semibold text-yellow-600">Eingeschränkte Leistung</p>
+              <p className="mt-2 text-gray-500">Einige Dienste können betroffen sein</p>
             </div>
           )}
         </div>
@@ -71,9 +71,9 @@ export default function HealthPage() {
               <Server className={`h-6 w-6 ${isHealthy ? "text-green-600" : "text-red-600"}`} />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">API Server</h3>
+              <h3 className="font-semibold text-gray-900">API-Server</h3>
               <p className={`text-sm ${isHealthy ? "text-green-600" : "text-red-600"}`}>
-                {isLoading ? "Checking..." : isHealthy ? "Operational" : "Down"}
+                {isLoading ? "Wird geprüft..." : isHealthy ? "Betriebsbereit" : "Nicht verfügbar"}
               </p>
             </div>
             <div className="ml-auto">
@@ -93,9 +93,9 @@ export default function HealthPage() {
               <Database className={`h-6 w-6 ${isDbConnected ? "text-green-600" : "text-red-600"}`} />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">Database</h3>
+              <h3 className="font-semibold text-gray-900">Datenbank</h3>
               <p className={`text-sm ${isDbConnected ? "text-green-600" : "text-red-600"}`}>
-                {isLoading ? "Checking..." : isDbConnected ? "Connected" : "Disconnected"}
+                {isLoading ? "Wird geprüft..." : isDbConnected ? "Verbunden" : "Getrennt"}
               </p>
             </div>
             <div className="ml-auto">
@@ -112,7 +112,7 @@ export default function HealthPage() {
       {/* Info Box */}
       <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
         <p className="text-sm text-blue-800">
-          Health checks run automatically every 30 seconds. Click refresh to check manually.
+          Statusprüfungen werden automatisch alle 30 Sekunden durchgeführt. Klicken Sie auf Aktualisieren für eine manuelle Prüfung.
         </p>
       </div>
     </div>

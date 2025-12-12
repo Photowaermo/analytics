@@ -29,15 +29,15 @@ export default function OverviewPage() {
   if (overviewError) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Overview</h1>
-        <ErrorCard message="Failed to load overview data" onRetry={() => refetchOverview()} />
+        <h1 className="text-2xl font-bold text-gray-900">Übersicht</h1>
+        <ErrorCard message="Übersichtsdaten konnten nicht geladen werden" onRetry={() => refetchOverview()} />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Overview</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Übersicht</h1>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -51,17 +51,17 @@ export default function OverviewPage() {
         ) : overview ? (
           <>
             <KpiCard
-              title="Total Leads"
+              title="Leads gesamt"
               value={formatNumber(overview.total_leads)}
               icon={Users}
             />
             <KpiCard
-              title="Total Sales"
+              title="Verkäufe gesamt"
               value={formatNumber(overview.total_sales)}
               icon={ShoppingCart}
             />
             <KpiCard
-              title="Revenue"
+              title="Umsatz"
               value={formatCurrency(overview.total_revenue)}
               icon={DollarSign}
             />
@@ -85,17 +85,17 @@ export default function OverviewPage() {
         ) : overview ? (
           <>
             <KpiCard
-              title="Cost Per Lead"
+              title="Kosten pro Lead"
               value={formatCurrency(overview.cpl)}
               icon={Target}
             />
             <KpiCard
-              title="Cost Per Sale"
+              title="Kosten pro Verkauf"
               value={formatCurrency(overview.cps)}
               icon={Target}
             />
             <KpiCard
-              title="Conversion Rate"
+              title="Konversionsrate"
               value={formatPercent(overview.conversion_rate)}
               icon={Percent}
             />
@@ -114,11 +114,11 @@ export default function OverviewPage() {
         {attributionLoading ? (
           <BarChartSkeleton />
         ) : attributionError ? (
-          <ErrorCard message="Failed to load campaign data" onRetry={() => refetchAttribution()} />
+          <ErrorCard message="Kampagnendaten konnten nicht geladen werden" onRetry={() => refetchAttribution()} />
         ) : campaignData.length > 0 ? (
           <BarChartCard
             data={campaignData}
-            title="Leads by Campaign"
+            title="Leads nach Kampagne"
             horizontal
           />
         ) : null}
@@ -128,14 +128,14 @@ export default function OverviewPage() {
       {overview && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <KpiCard
-            title="Total Spend"
+            title="Werbeausgaben"
             value={formatCurrency(overview.total_spend)}
-            subtitle="Marketing budget used"
+            subtitle="Genutztes Marketingbudget"
           />
           <KpiCard
-            title="Profit"
+            title="Gewinn"
             value={formatCurrency(overview.profit)}
-            subtitle={`${overview.margin.toFixed(1)}% margin`}
+            subtitle={`${overview.margin.toFixed(1)}% Marge`}
           />
         </div>
       )}
