@@ -5,6 +5,7 @@ import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { Eye } from "lucide-react";
 import { useJourneys, useJourneyDetail } from "@/lib/queries";
+import { useMode, modeConfig } from "@/lib/mode-context";
 import {
   Table,
   TableBody,
@@ -41,13 +42,23 @@ const statusLabels: Record<string, string> = {
 
 export default function JourneysPage() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
-  const { data: leads, isLoading, isError, refetch } = useJourneys(50, 0);
+  const { mode } = useMode();
+  const { data: leads, isLoading, isError, refetch } = useJourneys(100, 0);
   const { data: journeyDetail, isLoading: detailLoading, isError: detailError } = useJourneyDetail(selectedLeadId || "");
+
+  // Filter leads by mode
+  const modeProviders = modeConfig[mode].providers;
+  const filteredLeads = leads?.filter(lead => {
+    const sourceName = lead.source_name?.toLowerCase() || "";
+    return modeProviders.some(provider => sourceName.includes(provider));
+  }) || [];
+
+  const modeLabel = mode === "ads" ? "Werbeanzeigen" : "Organisch";
 
   if (isError) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Lead-Verlauf</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Lead-Verlauf - {modeLabel}</h1>
         <ErrorCard message="Leads konnten nicht geladen werden" onRetry={() => refetch()} />
       </div>
     );
@@ -55,7 +66,7 @@ export default function JourneysPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Lead-Verlauf</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Lead-Verlauf - {modeLabel}</h1>
 
       <div className="rounded-xl border border-gray-200/50 bg-white/70 backdrop-blur-sm shadow-sm overflow-hidden">
         {isLoading ? (
@@ -72,7 +83,7 @@ export default function JourneysPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {leads?.map((lead) => (
+              {filteredLeads.map((lead) => (
                 <TableRow key={lead.id}>
                   <TableCell className="font-medium">{lead.email}</TableCell>
                   <TableCell>{lead.source_name}</TableCell>
@@ -96,10 +107,10 @@ export default function JourneysPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {leads?.length === 0 && (
+              {filteredLeads.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                    Keine Leads gefunden
+                    Keine Leads für {modeLabel} gefunden
                   </TableCell>
                 </TableRow>
               )}
@@ -110,7 +121,7 @@ export default function JourneysPage() {
 
       {/* Journey Detail Modal */}
       <Dialog open={!!selectedLeadId} onOpenChange={() => setSelectedLeadId(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-white">
           <DialogHeader>
             <DialogTitle>Lead-Verlauf</DialogTitle>
           </DialogHeader>

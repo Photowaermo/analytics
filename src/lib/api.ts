@@ -101,8 +101,12 @@ export async function getOverview(startDate: string, endDate: string): Promise<O
   return fetchAPI(`/overview?start_date=${startDate}&end_date=${endDate}`);
 }
 
-export async function getFunnel(startDate: string, endDate: string): Promise<FunnelStep[]> {
-  return fetchAPI(`/funnel?start_date=${startDate}&end_date=${endDate}`);
+export async function getFunnel(startDate: string, endDate: string, provider?: string): Promise<FunnelStep[]> {
+  const params = new URLSearchParams({ start_date: startDate, end_date: endDate });
+  if (provider) {
+    params.append("provider", provider);
+  }
+  return fetchAPI(`/funnel?${params.toString()}`);
 }
 
 export async function getAttribution(

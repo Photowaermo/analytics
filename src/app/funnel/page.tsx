@@ -1,25 +1,38 @@
 "use client";
 
 import { useDateRange } from "@/lib/date-context";
+import { useMode } from "@/lib/mode-context";
 import { useFunnel } from "@/lib/queries";
 import { FunnelChart, FunnelChartSkeleton } from "@/components/charts/funnel-chart";
 import { KpiCard, KpiCardSkeleton } from "@/components/ui/kpi-card";
 import { ErrorCard } from "@/components/ui/error-card";
 import { formatNumber, formatPercent } from "@/lib/utils";
 
+// Map mode to provider for funnel filtering
+const modeToProvider: Record<string, string> = {
+  ads: "metaleads",
+  organic: "website",
+};
+
 export default function FunnelPage() {
   const { dateRange } = useDateRange();
-  const { data: funnel, isLoading, isError, refetch } = useFunnel(dateRange.startDate, dateRange.endDate);
+  const { mode } = useMode();
+
+  // Get provider for current mode (ads = metaleads, organic = website)
+  const provider = modeToProvider[mode];
+  const { data: funnel, isLoading, isError, refetch } = useFunnel(dateRange.startDate, dateRange.endDate, provider);
 
   const totalVisitors = funnel?.[0]?.count || 0;
   const totalLeads = funnel?.find((s) => s.step_name.toLowerCase().includes("lead"))?.count || 0;
   const totalSales = funnel?.[funnel.length - 1]?.count || 0;
   const overallConversion = totalVisitors > 0 ? (totalSales / totalVisitors) * 100 : 0;
 
+  const modeLabel = mode === "ads" ? "Werbeanzeigen" : "Organisch";
+
   if (isError) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Funnel-Analyse</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Funnel-Analyse - {modeLabel}</h1>
         <ErrorCard message="Funnel-Daten konnten nicht geladen werden" onRetry={() => refetch()} />
       </div>
     );
@@ -27,7 +40,7 @@ export default function FunnelPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Funnel-Analyse</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Funnel-Analyse - {modeLabel}</h1>
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

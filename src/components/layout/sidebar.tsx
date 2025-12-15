@@ -9,7 +9,6 @@ import {
   Filter,
   Route,
   Target,
-  Users,
   DollarSign,
   Activity,
   Settings,
@@ -17,14 +16,29 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMode, AnalyticsMode } from "@/lib/mode-context";
 
-const navItems = [
-  { href: "/", label: "Übersicht", icon: LayoutDashboard },
-  { href: "/funnel", label: "Funnel", icon: Filter },
-  { href: "/journeys", label: "Lead-Verlauf", icon: Route },
-  { href: "/attribution", label: "Attribution", icon: Target },
-  { href: "/providers", label: "Anbieter", icon: Users },
-  { href: "/costs", label: "Kosten & ROAS", icon: DollarSign },
+// Navigation items per mode
+const navItemsByMode: Record<AnalyticsMode, { href: string; label: string; icon: typeof LayoutDashboard }[]> = {
+  ads: [
+    { href: "/", label: "Übersicht", icon: LayoutDashboard },
+    { href: "/funnel", label: "Funnel", icon: Filter },
+    { href: "/journeys", label: "Lead-Verlauf", icon: Route },
+    { href: "/attribution", label: "Attribution", icon: Target },
+    { href: "/costs", label: "Kosten & ROAS", icon: DollarSign },
+  ],
+  purchased: [
+    { href: "/", label: "Übersicht", icon: LayoutDashboard },
+  ],
+  organic: [
+    { href: "/", label: "Übersicht", icon: LayoutDashboard },
+    { href: "/funnel", label: "Funnel", icon: Filter },
+    { href: "/journeys", label: "Lead-Verlauf", icon: Route },
+  ],
+};
+
+// Shared navigation items (always visible)
+const sharedNavItems = [
   { href: "/health", label: "Systemstatus", icon: Activity },
   { href: "/settings", label: "Einstellungen", icon: Settings },
 ];
@@ -32,6 +46,9 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const { mode } = useMode();
+
+  const modeNavItems = navItemsByMode[mode];
 
   return (
     <>
@@ -73,27 +90,54 @@ export function Sidebar() {
             <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
-        <nav className="space-y-1 p-4">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setIsOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                )}
-              >
-                <Icon className="h-5 w-5" />
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="flex flex-col h-[calc(100vh-4rem)]">
+          {/* Mode-specific navigation */}
+          <div className="space-y-1 p-4 flex-1">
+            {modeNavItems.map((item) => {
+              const isActive = pathname === item.href;
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Shared navigation (bottom) */}
+          <div className="border-t border-gray-200 p-4 space-y-1">
+            {sharedNavItems.map((item) => {
+              const isActive = pathname === item.href;
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
         </nav>
       </aside>
     </>

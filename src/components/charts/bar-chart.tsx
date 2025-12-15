@@ -10,15 +10,30 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import { formatNumber } from "@/lib/utils";
 
 interface BarChartProps {
-  data: { name: string; value: number }[];
+  data: { name: string; value: number; fullName?: string }[];
   title: string;
   color?: string;
   horizontal?: boolean;
 }
 
 const COLORS = ["#A1BF4F", "#7BCDA5", "#3A9E90", "#6B8E23", "#2F4F4F"];
+
+// Custom tooltip to show full name
+function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: { name: string; fullName?: string; value: number } }> }) {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
+        <p className="font-medium text-gray-900 mb-1">{data.fullName || data.name}</p>
+        <p className="text-sm text-gray-600">{formatNumber(data.value)} Leads</p>
+      </div>
+    );
+  }
+  return null;
+}
 
 export function BarChartCard({ data, title, color = "#A1BF4F", horizontal = false }: BarChartProps) {
   if (horizontal) {
@@ -30,25 +45,18 @@ export function BarChartCard({ data, title, color = "#A1BF4F", horizontal = fals
             <RechartsBarChart
               data={data}
               layout="vertical"
-              margin={{ top: 5, right: 20, left: 80, bottom: 5 }}
+              margin={{ top: 5, right: 20, left: 150, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={true} vertical={false} />
               <XAxis type="number" tick={{ fontSize: 12 }} stroke="#9ca3af" />
               <YAxis
                 type="category"
                 dataKey="name"
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 11 }}
                 stroke="#9ca3af"
-                width={75}
+                width={145}
               />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "white",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "8px",
-                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                }}
-              />
+              <Tooltip content={<CustomTooltip />} />
               <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                 {data.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -70,14 +78,7 @@ export function BarChartCard({ data, title, color = "#A1BF4F", horizontal = fals
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
             <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#9ca3af" />
             <YAxis tick={{ fontSize: 12 }} stroke="#9ca3af" />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "white",
-                border: "1px solid #e5e7eb",
-                borderRadius: "8px",
-                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-              }}
-            />
+            <Tooltip content={<CustomTooltip />} />
             <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]}>
               {data.map((_, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

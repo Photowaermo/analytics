@@ -17,7 +17,7 @@ import {
 // Query Keys
 export const queryKeys = {
   overview: (startDate: string, endDate: string) => ["overview", startDate, endDate] as const,
-  funnel: (startDate: string, endDate: string) => ["funnel", startDate, endDate] as const,
+  funnel: (startDate: string, endDate: string, provider?: string) => ["funnel", startDate, endDate, provider] as const,
   attribution: (startDate: string, endDate: string, level: string) =>
     ["attribution", startDate, endDate, level] as const,
   providers: (startDate: string, endDate: string) => ["providers", startDate, endDate] as const,
@@ -35,10 +35,10 @@ export function useOverview(startDate: string, endDate: string) {
   });
 }
 
-export function useFunnel(startDate: string, endDate: string) {
+export function useFunnel(startDate: string, endDate: string, provider?: string) {
   return useQuery({
-    queryKey: queryKeys.funnel(startDate, endDate),
-    queryFn: () => getFunnel(startDate, endDate),
+    queryKey: queryKeys.funnel(startDate, endDate, provider),
+    queryFn: () => getFunnel(startDate, endDate, provider),
   });
 }
 

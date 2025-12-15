@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ErrorCard } from "@/components/ui/error-card";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { formatCurrency, formatNumber, translateToGerman } from "@/lib/utils";
 
 type Level = "campaign" | "adset" | "ad";
 
@@ -68,7 +68,7 @@ export default function AttributionPage() {
                       <TableRow key={item.name}>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
-                            {item.name}
+                            {translateToGerman(item.name)}
                             {index === 0 && topRoas > 0 && (
                               <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
                                 <Trophy className="h-3 w-3 mr-1" />

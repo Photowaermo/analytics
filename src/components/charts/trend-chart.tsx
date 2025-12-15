@@ -30,10 +30,25 @@ export function TrendChart({ data }: TrendChartProps) {
       <h3 className="mb-4 text-lg font-semibold text-gray-900">Leads vs. Verkäufe Trend</h3>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={formattedData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+          <LineChart data={formattedData} margin={{ top: 5, right: 60, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis dataKey="dateLabel" tick={{ fontSize: 12 }} stroke="#9ca3af" />
-            <YAxis tick={{ fontSize: 12 }} stroke="#9ca3af" />
+            {/* Left Y-axis for Leads */}
+            <YAxis
+              yAxisId="leads"
+              orientation="left"
+              tick={{ fontSize: 12 }}
+              stroke="#A1BF4F"
+              label={{ value: "Leads", angle: -90, position: "insideLeft", fill: "#A1BF4F", fontSize: 12 }}
+            />
+            {/* Right Y-axis for Sales */}
+            <YAxis
+              yAxisId="sales"
+              orientation="right"
+              tick={{ fontSize: 12 }}
+              stroke="#3A9E90"
+              label={{ value: "Verkäufe", angle: 90, position: "insideRight", fill: "#3A9E90", fontSize: 12 }}
+            />
             <Tooltip
               contentStyle={{
                 backgroundColor: "white",
@@ -44,6 +59,7 @@ export function TrendChart({ data }: TrendChartProps) {
             />
             <Legend />
             <Line
+              yAxisId="leads"
               type="monotone"
               dataKey="Leads"
               stroke="#A1BF4F"
@@ -52,6 +68,7 @@ export function TrendChart({ data }: TrendChartProps) {
               activeDot={{ r: 6 }}
             />
             <Line
+              yAxisId="sales"
               type="monotone"
               dataKey="Verkäufe"
               stroke="#3A9E90"
