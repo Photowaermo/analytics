@@ -16,29 +16,33 @@ import {
 
 // Query Keys
 export const queryKeys = {
-  overview: (startDate: string, endDate: string, provider?: string) => ["overview", startDate, endDate, provider] as const,
-  funnel: (startDate: string, endDate: string, provider?: string) => ["funnel", startDate, endDate, provider] as const,
-  attribution: (startDate: string, endDate: string, level: string, campaign?: string, adset?: string) =>
-    ["attribution", startDate, endDate, level, campaign, adset] as const,
-  providers: (startDate: string, endDate: string) => ["providers", startDate, endDate] as const,
-  journeys: (limit: number, offset: number, provider?: string) => ["journeys", limit, offset, provider] as const,
+  overview: (startDate: string, endDate: string, provider?: string, platform?: string) =>
+    ["overview", startDate, endDate, provider, platform] as const,
+  funnel: (startDate: string, endDate: string, provider?: string, platform?: string) =>
+    ["funnel", startDate, endDate, provider, platform] as const,
+  attribution: (startDate: string, endDate: string, level: string, campaign?: string, adset?: string, platform?: string) =>
+    ["attribution", startDate, endDate, level, campaign, adset, platform] as const,
+  providers: (startDate: string, endDate: string, platform?: string) =>
+    ["providers", startDate, endDate, platform] as const,
+  journeys: (limit: number, offset: number, provider?: string, platform?: string) =>
+    ["journeys", limit, offset, provider, platform] as const,
   journeyDetail: (id: string) => ["journey", id] as const,
   settings: ["settings"] as const,
   health: ["health"] as const,
 };
 
 // Hooks
-export function useOverview(startDate: string, endDate: string, provider?: string) {
+export function useOverview(startDate: string, endDate: string, provider?: string, platform?: string) {
   return useQuery({
-    queryKey: queryKeys.overview(startDate, endDate, provider),
-    queryFn: () => getOverview(startDate, endDate, provider),
+    queryKey: queryKeys.overview(startDate, endDate, provider, platform),
+    queryFn: () => getOverview(startDate, endDate, provider, platform),
   });
 }
 
-export function useFunnel(startDate: string, endDate: string, provider?: string) {
+export function useFunnel(startDate: string, endDate: string, provider?: string, platform?: string) {
   return useQuery({
-    queryKey: queryKeys.funnel(startDate, endDate, provider),
-    queryFn: () => getFunnel(startDate, endDate, provider),
+    queryKey: queryKeys.funnel(startDate, endDate, provider, platform),
+    queryFn: () => getFunnel(startDate, endDate, provider, platform),
   });
 }
 
@@ -47,25 +51,26 @@ export function useAttribution(
   endDate: string,
   level: "campaign" | "adset" | "ad",
   campaign?: string,
-  adset?: string
+  adset?: string,
+  platform?: string
 ) {
   return useQuery({
-    queryKey: queryKeys.attribution(startDate, endDate, level, campaign, adset),
-    queryFn: () => getAttribution(startDate, endDate, level, campaign, adset),
+    queryKey: queryKeys.attribution(startDate, endDate, level, campaign, adset, platform),
+    queryFn: () => getAttribution(startDate, endDate, level, campaign, adset, platform),
   });
 }
 
-export function useProviders(startDate: string, endDate: string) {
+export function useProviders(startDate: string, endDate: string, platform?: string) {
   return useQuery({
-    queryKey: queryKeys.providers(startDate, endDate),
-    queryFn: () => getProviders(startDate, endDate),
+    queryKey: queryKeys.providers(startDate, endDate, platform),
+    queryFn: () => getProviders(startDate, endDate, platform),
   });
 }
 
-export function useJourneys(limit = 50, offset = 0, provider?: string) {
+export function useJourneys(limit = 50, offset = 0, provider?: string, platform?: string) {
   return useQuery({
-    queryKey: queryKeys.journeys(limit, offset, provider),
-    queryFn: () => getJourneys(limit, offset, provider),
+    queryKey: queryKeys.journeys(limit, offset, provider, platform),
+    queryFn: () => getJourneys(limit, offset, provider, platform),
   });
 }
 

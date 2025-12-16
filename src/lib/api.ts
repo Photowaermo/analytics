@@ -37,6 +37,8 @@ export interface Attribution {
   clicks: number;
   creative_thumbnail?: string;
   created_date?: string;
+  campaign_name?: string;
+  adset_name?: string;
 }
 
 export interface Provider {
@@ -55,6 +57,9 @@ export interface Lead {
   submission_type: string;
   crm_status: string;
   created_at: string;
+  campaign_name?: string;
+  adset_name?: string;
+  ad_name?: string;
 }
 
 export interface TimelineEvent {
@@ -85,6 +90,14 @@ export interface HealthStatus {
 // API Client
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://leads.photowaermo.de/analytics";
 
+// Helper to append platform params (handles comma-separated values)
+function appendPlatformParams(params: URLSearchParams, platform?: string) {
+  if (platform) {
+    // Split comma-separated platforms and append each as separate param
+    platform.split(",").forEach(p => params.append("platform", p.trim()));
+  }
+}
+
 async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
@@ -102,19 +115,21 @@ async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> 
 }
 
 // API Functions
-export async function getOverview(startDate: string, endDate: string, provider?: string): Promise<OverviewStats> {
+export async function getOverview(startDate: string, endDate: string, provider?: string, platform?: string): Promise<OverviewStats> {
   const params = new URLSearchParams({ start_date: startDate, end_date: endDate });
   if (provider) {
     params.append("provider", provider);
   }
+  appendPlatformParams(params, platform);
   return fetchAPI(`/overview?${params.toString()}`);
 }
 
-export async function getFunnel(startDate: string, endDate: string, provider?: string): Promise<FunnelStep[]> {
+export async function getFunnel(startDate: string, endDate: string, provider?: string, platform?: string): Promise<FunnelStep[]> {
   const params = new URLSearchParams({ start_date: startDate, end_date: endDate });
   if (provider) {
     params.append("provider", provider);
   }
+  appendPlatformParams(params, platform);
   return fetchAPI(`/funnel?${params.toString()}`);
 }
 
@@ -123,7 +138,8 @@ export async function getAttribution(
   endDate: string,
   level: "campaign" | "adset" | "ad",
   campaign?: string,
-  adset?: string
+  adset?: string,
+  platform?: string
 ): Promise<Attribution[]> {
   const params = new URLSearchParams({
     start_date: startDate,
@@ -136,16 +152,20 @@ export async function getAttribution(
   if (adset) {
     params.append("adset", adset);
   }
+  appendPlatformParams(params, platform);
   return fetchAPI(`/attribution?${params.toString()}`);
 }
 
-export async function getProviders(startDate: string, endDate: string): Promise<Provider[]> {
-  return fetchAPI(`/providers?start_date=${startDate}&end_date=${endDate}`);
+export async function getProviders(startDate: string, endDate: string, platform?: string): Promise<Provider[]> {
+  const params = new URLSearchParams({ start_date: startDate, end_date: endDate });
+  appendPlatformParams(params, platform);
+  return fetchAPI(`/providers?${params.toString()}`);
 }
 
-export async function getJourneys(limit = 50, offset = 0, provider?: string): Promise<Lead[]> {
+export async function getJourneys(limit = 50, offset = 0, provider?: string, platform?: string): Promise<Lead[]> {
   const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
   if (provider) params.append("provider", provider);
+  appendPlatformParams(params, platform);
   return fetchAPI(`/journeys/?${params.toString()}`);
 }
 

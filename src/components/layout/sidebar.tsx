@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Filter,
@@ -19,30 +19,30 @@ import {
 import { cn } from "@/lib/utils";
 import { useMode, AnalyticsMode } from "@/lib/mode-context";
 
-// Navigation items per mode
-const navItemsByMode: Record<AnalyticsMode, { href: string; label: string; icon: typeof LayoutDashboard }[]> = {
+// Navigation items per mode (relative paths within mode)
+const navItemsByMode: Record<AnalyticsMode, { path: string; label: string; icon: typeof LayoutDashboard }[]> = {
   all: [
-    { href: "/", label: "Übersicht", icon: LayoutDashboard },
-    { href: "/leads", label: "Neueste Leads", icon: Users },
+    { path: "", label: "Übersicht", icon: LayoutDashboard },
+    { path: "leads", label: "Neueste Leads", icon: Users },
   ],
   ads: [
-    { href: "/", label: "Übersicht", icon: LayoutDashboard },
-    { href: "/funnel", label: "Website-Funnel", icon: Filter },
-    { href: "/journeys", label: "Lead-Verlauf", icon: Route },
-    { href: "/attribution", label: "Attribution", icon: Target },
-    { href: "/costs", label: "Kosten & ROAS", icon: DollarSign },
+    { path: "", label: "Übersicht", icon: LayoutDashboard },
+    { path: "funnel", label: "Website-Funnel", icon: Filter },
+    { path: "journeys", label: "Lead-Verlauf", icon: Route },
+    { path: "attribution", label: "Attribution", icon: Target },
+    { path: "costs", label: "Kosten & ROAS", icon: DollarSign },
   ],
   purchased: [
-    { href: "/", label: "Übersicht", icon: LayoutDashboard },
+    { path: "", label: "Übersicht", icon: LayoutDashboard },
   ],
   organic: [
-    { href: "/", label: "Übersicht", icon: LayoutDashboard },
-    { href: "/funnel", label: "Website-Funnel", icon: Filter },
-    { href: "/journeys", label: "Lead-Verlauf", icon: Route },
+    { path: "", label: "Übersicht", icon: LayoutDashboard },
+    { path: "funnel", label: "Website-Funnel", icon: Filter },
+    { path: "journeys", label: "Lead-Verlauf", icon: Route },
   ],
 };
 
-// Shared navigation items (always visible)
+// Shared navigation items (always visible, absolute paths)
 const sharedNavItems = [
   { href: "/health", label: "Systemstatus", icon: Activity },
   { href: "/settings", label: "Einstellungen", icon: Settings },
@@ -50,22 +50,19 @@ const sharedNavItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const { mode } = useMode();
 
   const modeNavItems = navItemsByMode[mode];
 
-  // Redirect to "/" if current path is not available in current mode
-  useEffect(() => {
-    const allValidPaths = [
-      ...modeNavItems.map(item => item.href),
-      ...sharedNavItems.map(item => item.href),
-    ];
-    if (!allValidPaths.includes(pathname)) {
-      router.replace("/");
-    }
-  }, [pathname, mode, modeNavItems, router]);
+  // Build full href for mode items
+  const getFullHref = (path: string) => `/${mode}${path ? `/${path}` : ""}`;
+
+  // Check if a mode item is active
+  const isModeItemActive = (path: string) => {
+    const fullHref = getFullHref(path);
+    return pathname === fullHref;
+  };
 
   return (
     <>
@@ -111,12 +108,13 @@ export function Sidebar() {
           {/* Mode-specific navigation */}
           <div className="space-y-1 p-4 flex-1">
             {modeNavItems.map((item) => {
-              const isActive = pathname === item.href;
+              const href = getFullHref(item.path);
+              const isActive = isModeItemActive(item.path);
               const Icon = item.icon;
               return (
                 <Link
-                  key={item.href}
-                  href={item.href}
+                  key={item.path}
+                  href={href}
                   onClick={() => setIsOpen(false)}
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",

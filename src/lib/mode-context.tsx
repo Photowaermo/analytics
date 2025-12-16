@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, ReactNode } from "react";
+import { useRouter, usePathname } from "next/navigation";
 
 export type AnalyticsMode = "all" | "ads" | "purchased" | "organic";
 
@@ -11,32 +12,47 @@ interface ModeContextType {
 
 const ModeContext = createContext<ModeContextType | undefined>(undefined);
 
-const STORAGE_KEY = "analytics-mode";
-const validModes: AnalyticsMode[] = ["all", "ads", "purchased", "organic"];
+export const validModes: AnalyticsMode[] = ["all", "ads", "purchased", "organic"];
 
-export function ModeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<AnalyticsMode>("all");
-  const [isLoaded, setIsLoaded] = useState(false);
+// Pages available per mode
+export const pagesByMode: Record<AnalyticsMode, string[]> = {
+  all: ["", "leads"],
+  ads: ["", "funnel", "journeys", "attribution", "costs"],
+  purchased: [""],
+  organic: ["", "funnel", "journeys"],
+};
 
-  // Load mode from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && validModes.includes(saved as AnalyticsMode)) {
-      setModeState(saved as AnalyticsMode);
-    }
-    setIsLoaded(true);
-  }, []);
+interface ModeProviderProps {
+  children: ReactNode;
+  initialMode?: AnalyticsMode;
+}
 
-  // Save mode to localStorage when it changes
+export function ModeProvider({ children, initialMode }: ModeProviderProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Extract mode from URL if not provided
+  const pathParts = pathname.split("/").filter(Boolean);
+  const urlMode = pathParts[0] as AnalyticsMode;
+
+  // Use initialMode if provided, otherwise try to extract from URL, fallback to "all"
+  const mode: AnalyticsMode = initialMode ??
+    (validModes.includes(urlMode) ? urlMode : "all");
+
+  // Extract current page from pathname (e.g., /ads/funnel -> funnel)
+  const currentPage = pathParts.length > 1 ? pathParts[1] : "";
+
   const setMode = (newMode: AnalyticsMode) => {
-    setModeState(newMode);
-    localStorage.setItem(STORAGE_KEY, newMode);
+    // Check if current page is available in new mode
+    const validPages = pagesByMode[newMode];
+    if (validPages.includes(currentPage)) {
+      // Navigate to same page in new mode
+      router.push(`/${newMode}${currentPage ? `/${currentPage}` : ""}`);
+    } else {
+      // Navigate to overview in new mode
+      router.push(`/${newMode}`);
+    }
   };
-
-  // Don't render children until we've loaded the mode from localStorage
-  if (!isLoaded) {
-    return null;
-  }
 
   return (
     <ModeContext.Provider value={{ mode, setMode }}>
@@ -67,7 +83,7 @@ export const modeConfig: Record<AnalyticsMode, {
   ads: {
     label: "Werbeanzeigen",
     description: "Meta, Google, TikTok Ads",
-    providers: ["metaleads"],
+    providers: [], // Dynamic - built from active platforms
   },
   purchased: {
     label: "Gekaufte Leads",
@@ -80,3 +96,28 @@ export const modeConfig: Record<AnalyticsMode, {
     providers: ["website"],
   },
 };
+
+// Mapping from platform ID to provider name(s) in the database
+export const platformToProviders: Record<string, string[]> = {
+  meta: ["metaleads", "meta", "facebook", "instagram"],
+  google: ["google", "adwords"],
+  tiktok: ["tiktok"],
+  linkedin: ["linkedin"],
+  pinterest: ["pinterest"],
+  twitter: ["twitter", "x"],
+};
+
+// Get ad providers based on active platforms from settings
+export function getAdProviders(activePlatforms: Record<string, boolean> | undefined): string[] {
+  const defaultPlatforms = { meta: true }; // Default if no settings
+  const platforms = activePlatforms || defaultPlatforms;
+
+  const providers: string[] = [];
+  Object.entries(platforms).forEach(([platform, isActive]) => {
+    if (isActive && platformToProviders[platform]) {
+      providers.push(...platformToProviders[platform]);
+    }
+  });
+
+  return providers;
+}

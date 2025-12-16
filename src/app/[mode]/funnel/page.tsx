@@ -2,6 +2,7 @@
 
 import { useDateRange } from "@/lib/date-context";
 import { useMode } from "@/lib/mode-context";
+import { usePlatform } from "@/lib/platform-context";
 import { useFunnel } from "@/lib/queries";
 import { FunnelChart, FunnelChartSkeleton } from "@/components/charts/funnel-chart";
 import { KpiCard, KpiCardSkeleton } from "@/components/ui/kpi-card";
@@ -17,10 +18,13 @@ const modeToProvider: Record<string, string> = {
 export default function FunnelPage() {
   const { dateRange } = useDateRange();
   const { mode } = useMode();
+  const { platformParam } = usePlatform();
 
   // Get provider for current mode (ads = metaleads, organic = website)
   const provider = modeToProvider[mode];
-  const { data: funnel, isLoading, isError, refetch } = useFunnel(dateRange.startDate, dateRange.endDate, provider);
+  // Only apply platform filter when in ads mode
+  const platform = mode === "ads" ? platformParam : undefined;
+  const { data: funnel, isLoading, isError, refetch } = useFunnel(dateRange.startDate, dateRange.endDate, provider, platform);
 
   const totalVisitors = funnel?.[0]?.count || 0;
   const totalLeads = funnel?.find((s) => s.step_name.toLowerCase().includes("lead"))?.count || 0;

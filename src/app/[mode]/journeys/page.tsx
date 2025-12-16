@@ -4,8 +4,10 @@ import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { Eye } from "lucide-react";
+import Link from "next/link";
 import { useJourneys, useJourneyDetail } from "@/lib/queries";
 import { useMode } from "@/lib/mode-context";
+import { usePlatform } from "@/lib/platform-context";
 import {
   Table,
   TableBody,
@@ -51,8 +53,11 @@ const modeToProvider: Record<string, string | undefined> = {
 export default function JourneysPage() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const { mode } = useMode();
+  const { platformParam } = usePlatform();
   const provider = modeToProvider[mode];
-  const { data: leads, isLoading, isError, refetch } = useJourneys(100, 0, provider);
+  // Only apply platform filter when in ads mode
+  const platform = mode === "ads" ? platformParam : undefined;
+  const { data: leads, isLoading, isError, refetch } = useJourneys(100, 0, provider, platform);
   const { data: journeyDetail, isLoading: detailLoading, isError: detailError } = useJourneyDetail(selectedLeadId || "");
 
   const filteredLeads = leads || [];
@@ -88,6 +93,13 @@ export default function JourneysPage() {
                 <TableHead>E-Mail</TableHead>
                 <TableHead>Quelle</TableHead>
                 <TableHead>Formular</TableHead>
+                {mode === "ads" && (
+                  <>
+                    <TableHead>Kampagne</TableHead>
+                    <TableHead>Anzeigengruppe</TableHead>
+                    <TableHead>Anzeige</TableHead>
+                  </>
+                )}
                 <TableHead>Status</TableHead>
                 <TableHead>Erstellt am</TableHead>
                 <TableHead className="text-right">Aktionen</TableHead>
@@ -105,6 +117,51 @@ export default function JourneysPage() {
                        lead.submission_type === "api" ? "API" : lead.submission_type}
                     </Badge>
                   </TableCell>
+                  {mode === "ads" && (
+                    <>
+                      <TableCell className="text-sm max-w-[150px]">
+                        {lead.campaign_name ? (
+                          <Link
+                            href={`/${mode}/attribution?campaign=${encodeURIComponent(lead.campaign_name)}`}
+                            className="text-blue-600 hover:text-blue-800 hover:underline block truncate"
+                            title={lead.campaign_name}
+                          >
+                            {lead.campaign_name}
+                          </Link>
+                        ) : "-"}
+                      </TableCell>
+                      <TableCell className="text-sm max-w-[150px]">
+                        {lead.adset_name && lead.campaign_name ? (
+                          <Link
+                            href={`/${mode}/attribution?campaign=${encodeURIComponent(lead.campaign_name)}&adset=${encodeURIComponent(lead.adset_name)}`}
+                            className="text-blue-600 hover:text-blue-800 hover:underline block truncate"
+                            title={lead.adset_name}
+                          >
+                            {lead.adset_name}
+                          </Link>
+                        ) : (
+                          <span className="truncate block" title={lead.adset_name || undefined}>
+                            {lead.adset_name || "-"}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm max-w-[150px]">
+                        {lead.ad_name && lead.campaign_name && lead.adset_name ? (
+                          <Link
+                            href={`/${mode}/attribution?campaign=${encodeURIComponent(lead.campaign_name)}&adset=${encodeURIComponent(lead.adset_name)}`}
+                            className="text-blue-600 hover:text-blue-800 hover:underline block truncate"
+                            title={lead.ad_name}
+                          >
+                            {lead.ad_name}
+                          </Link>
+                        ) : (
+                          <span className="truncate block text-gray-600" title={lead.ad_name || undefined}>
+                            {lead.ad_name || "-"}
+                          </span>
+                        )}
+                      </TableCell>
+                    </>
+                  )}
                   <TableCell>
                     <Badge className={statusColors[lead.crm_status] || "bg-gray-100 text-gray-800"}>
                       {statusLabels[lead.crm_status] || lead.crm_status}
@@ -127,7 +184,7 @@ export default function JourneysPage() {
               ))}
               {filteredLeads.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={mode === "ads" ? 9 : 6} className="text-center py-8 text-gray-500">
                     Keine Leads für {modeLabel} gefunden
                   </TableCell>
                 </TableRow>

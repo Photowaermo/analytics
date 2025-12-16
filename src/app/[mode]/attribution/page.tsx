@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Trophy, ChevronRight, ArrowLeft, X } from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Trophy, ChevronRight, ChevronDown, ArrowLeft, X } from "lucide-react";
+import { useMode } from "@/lib/mode-context";
 import { useDateRange } from "@/lib/date-context";
+import { usePlatform } from "@/lib/platform-context";
 import { useAttribution } from "@/lib/queries";
 import {
   Table,
@@ -18,6 +21,13 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ErrorCard } from "@/components/ui/error-card";
@@ -31,11 +41,45 @@ interface BreadcrumbItem {
   value?: string;
 }
 
+type SortBy = "roas" | "leads" | "cpl";
+type TopCount = 3 | 5 | 10;
+
 export default function AttributionPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { mode } = useMode();
+
   const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
   const [selectedAdset, setSelectedAdset] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  // Top Ads panel state
+  const [isTopAdsExpanded, setIsTopAdsExpanded] = useState(false);
+  const [topAdsCount, setTopAdsCount] = useState<TopCount>(3);
+  const [topAdsSortBy, setTopAdsSortBy] = useState<SortBy>("leads");
+
   const { dateRange } = useDateRange();
+  const { platformParam } = usePlatform();
+
+  // Only apply platform filter when in ads mode
+  const platform = mode === "ads" ? platformParam : undefined;
+
+  // Initialize state from URL params on mount
+  useEffect(() => {
+    const campaign = searchParams.get("campaign");
+    const adset = searchParams.get("adset");
+    if (campaign) setSelectedCampaign(campaign);
+    if (adset) setSelectedAdset(adset);
+  }, [searchParams]);
+
+  // Update URL when selection changes
+  const updateUrl = (campaign: string | null, adset: string | null) => {
+    const params = new URLSearchParams();
+    if (campaign) params.set("campaign", campaign);
+    if (adset) params.set("adset", adset);
+    const queryString = params.toString();
+    router.replace(queryString ? `/${mode}/attribution?${queryString}` : `/${mode}/attribution`, { scroll: false });
+  };
 
   // Determine current level based on selection
   const currentLevel: Level = selectedAdset ? "ad" : selectedCampaign ? "adset" : "campaign";
@@ -45,8 +89,50 @@ export default function AttributionPage() {
     dateRange.endDate,
     currentLevel,
     selectedCampaign || undefined,
-    selectedAdset || undefined
+    selectedAdset || undefined,
+    platform
   );
+
+  // Fetch ALL items for current level globally (for Top comparison panel)
+  const { data: allItemsForLevel, isLoading: allItemsLoading } = useAttribution(
+    dateRange.startDate,
+    dateRange.endDate,
+    currentLevel,
+    undefined,
+    undefined,
+    platform
+  );
+
+  // Sort and filter top items based on selected metric
+  const getTopItems = () => {
+    if (!allItemsForLevel) return [];
+
+    let sorted = [...allItemsForLevel];
+
+    switch (topAdsSortBy) {
+      case "roas":
+        sorted = sorted.filter(a => a.roas > 0).sort((a, b) => b.roas - a.roas);
+        break;
+      case "leads":
+        sorted = sorted.filter(a => a.leads > 0).sort((a, b) => b.leads - a.leads);
+        break;
+      case "cpl":
+        sorted = sorted.filter(a => a.cpl > 0).sort((a, b) => a.cpl - b.cpl);
+        break;
+    }
+
+    return sorted.slice(0, topAdsCount);
+  };
+
+  const topItems = getTopItems();
+
+  // Labels based on current level
+  const levelLabels = {
+    campaign: { singular: "Kampagne", plural: "Kampagnen", title: "Top Kampagnen Vergleich" },
+    adset: { singular: "Anzeigengruppe", plural: "Anzeigengruppen", title: "Top Anzeigengruppen Vergleich" },
+    ad: { singular: "Ad", plural: "Ads", title: "Top Ads Vergleich" },
+  };
+  const currentLevelLabels = levelLabels[currentLevel];
 
   // Data comes pre-sorted by date (newest first) from backend
   const sortedData = attribution || [];
@@ -66,8 +152,10 @@ export default function AttributionPage() {
   const handleRowClick = (item: { name: string }) => {
     if (currentLevel === "campaign") {
       setSelectedCampaign(item.name);
+      updateUrl(item.name, null);
     } else if (currentLevel === "adset") {
       setSelectedAdset(item.name);
+      updateUrl(selectedCampaign, item.name);
     }
     // At ad level, no further drill-down
   };
@@ -77,9 +165,11 @@ export default function AttributionPage() {
       // Go back to campaigns
       setSelectedCampaign(null);
       setSelectedAdset(null);
+      updateUrl(null, null);
     } else if (index === 1) {
       // Go back to ad sets (keep campaign selected)
       setSelectedAdset(null);
+      updateUrl(selectedCampaign, null);
     }
     // Index 2 would be current level (ads), no action needed
   };
@@ -87,8 +177,10 @@ export default function AttributionPage() {
   const handleBack = () => {
     if (selectedAdset) {
       setSelectedAdset(null);
+      updateUrl(selectedCampaign, null);
     } else if (selectedCampaign) {
       setSelectedCampaign(null);
+      updateUrl(null, null);
     }
   };
 
@@ -136,6 +228,149 @@ export default function AttributionPage() {
             </button>
           </div>
         ))}
+      </div>
+
+      {/* Top Comparison Panel - adapts to current level */}
+      <div className="rounded-xl border border-gray-200/50 bg-white/70 backdrop-blur-sm shadow-sm overflow-hidden">
+        {/* Header - always visible */}
+        <button
+          onClick={() => setIsTopAdsExpanded(!isTopAdsExpanded)}
+          className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            {isTopAdsExpanded ? (
+              <ChevronDown className="h-5 w-5 text-gray-500" />
+            ) : (
+              <ChevronRight className="h-5 w-5 text-gray-500" />
+            )}
+            <span className="font-semibold text-gray-900">{currentLevelLabels.title}</span>
+            {!isTopAdsExpanded && topItems.length > 0 && (
+              <Badge variant="outline" className="ml-2">
+                {topItems.length} beste {currentLevelLabels.plural}
+              </Badge>
+            )}
+          </div>
+
+          {/* Controls - stop propagation to prevent toggle */}
+          <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+            <Select
+              value={String(topAdsCount)}
+              onValueChange={(v) => setTopAdsCount(Number(v) as TopCount)}
+            >
+              <SelectTrigger className="w-24 h-8 text-sm bg-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="3">Top 3</SelectItem>
+                <SelectItem value="5">Top 5</SelectItem>
+                <SelectItem value="10">Top 10</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={topAdsSortBy}
+              onValueChange={(v) => setTopAdsSortBy(v as SortBy)}
+            >
+              <SelectTrigger className="w-32 h-8 text-sm bg-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="roas">Nach ROAS</SelectItem>
+                <SelectItem value="leads">Nach Leads</SelectItem>
+                <SelectItem value="cpl">Nach CPL</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </button>
+
+        {/* Expanded Content */}
+        {isTopAdsExpanded && (
+          <div className="border-t border-gray-200">
+            {allItemsLoading ? (
+              <div className="p-8 text-center text-gray-500">Laden...</div>
+            ) : topItems.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">Keine {currentLevelLabels.plural} mit Daten verfügbar</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {currentLevel === "ad" && <TableHead className="w-16">Creative</TableHead>}
+                    <TableHead>Name</TableHead>
+                    {currentLevel === "ad" && <TableHead>Kampagne</TableHead>}
+                    {currentLevel === "ad" && <TableHead>Anzeigengruppe</TableHead>}
+                    <TableHead className="text-right">Leads</TableHead>
+                    <TableHead className="text-right">Verkäufe</TableHead>
+                    <TableHead className="text-right">CPL</TableHead>
+                    <TableHead className="text-right">ROAS</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {topItems.map((item, index) => (
+                    <TableRow key={item.name} className={index === 0 ? "bg-yellow-50" : ""}>
+                      {currentLevel === "ad" && (
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          {item.creative_thumbnail ? (
+                            <button
+                              onClick={() => setSelectedImage(item.creative_thumbnail!)}
+                              className="cursor-pointer hover:opacity-80 transition-opacity"
+                            >
+                              <Image
+                                src={item.creative_thumbnail}
+                                alt="Creative"
+                                width={40}
+                                height={40}
+                                className="h-10 w-10 object-cover rounded"
+                                unoptimized
+                              />
+                            </button>
+                          ) : (
+                            <div className="h-10 w-10 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">
+                              K.A.
+                            </div>
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {index === 0 && (
+                            <Trophy className="h-4 w-4 text-yellow-600" />
+                          )}
+                          {translateToGerman(item.name)}
+                        </div>
+                      </TableCell>
+                      {currentLevel === "ad" && (
+                        <TableCell className="text-gray-600 text-sm">
+                          {item.campaign_name ? translateToGerman(item.campaign_name) : "-"}
+                        </TableCell>
+                      )}
+                      {currentLevel === "ad" && (
+                        <TableCell className="text-gray-600 text-sm">
+                          {item.adset_name ? translateToGerman(item.adset_name) : "-"}
+                        </TableCell>
+                      )}
+                      <TableCell className="text-right">{formatNumber(item.leads)}</TableCell>
+                      <TableCell className="text-right">{formatNumber(item.sales)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(item.cpl)}</TableCell>
+                      <TableCell className="text-right">
+                        <span
+                          className={
+                            item.roas >= 3
+                              ? "text-green-600 font-semibold"
+                              : item.roas >= 1
+                              ? "text-yellow-600"
+                              : "text-red-600"
+                          }
+                        >
+                          {item.roas.toFixed(2)}x
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Entry count */}
