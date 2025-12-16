@@ -48,7 +48,7 @@ export function FunnelChart({ data }: FunnelChartProps) {
                   <div
                     className="h-full rounded-lg transition-all duration-500 flex items-center justify-end pr-3"
                     style={{
-                      width: `${Math.max(widthPercent, 5)}%`,
+                      width: step.count === 0 ? "0%" : `${Math.max(widthPercent, 5)}%`,
                       backgroundColor: COLORS[index % COLORS.length],
                     }}
                   >

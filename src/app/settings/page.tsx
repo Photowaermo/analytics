@@ -5,12 +5,24 @@ import { Save, Loader2 } from "lucide-react";
 import { useSettings, useUpdateSettings } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+// Available ad platforms with their UTM sources
+const AD_PLATFORMS = [
+  { id: "meta", label: "Meta (Facebook/Instagram)", utmSources: ["facebook", "fb", "instagram", "ig", "meta"] },
+  { id: "google", label: "Google Ads", utmSources: ["google", "gclid", "adwords"] },
+  { id: "tiktok", label: "TikTok Ads", utmSources: ["tiktok", "tt"] },
+  { id: "linkedin", label: "LinkedIn Ads", utmSources: ["linkedin", "li"] },
+  { id: "pinterest", label: "Pinterest Ads", utmSources: ["pinterest", "pin"] },
+  { id: "twitter", label: "Twitter/X Ads", utmSources: ["twitter", "x", "tw"] },
+];
 
 export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
   const updateSettings = useUpdateSettings();
   const [prices, setPrices] = useState<Record<string, string>>({});
+  const [adPlatforms, setAdPlatforms] = useState<Record<string, boolean>>({});
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
@@ -21,10 +33,21 @@ export default function SettingsPage() {
       });
       setPrices(stringPrices);
     }
+    if (settings?.active_ad_platforms) {
+      setAdPlatforms(settings.active_ad_platforms);
+    } else {
+      // Default: only Meta is active
+      setAdPlatforms({ meta: true });
+    }
   }, [settings]);
 
   const handlePriceChange = (provider: string, value: string) => {
     setPrices((prev) => ({ ...prev, [provider]: value }));
+    setHasChanges(true);
+  };
+
+  const handlePlatformToggle = (platformId: string, enabled: boolean) => {
+    setAdPlatforms((prev) => ({ ...prev, [platformId]: enabled }));
     setHasChanges(true);
   };
 
@@ -34,7 +57,10 @@ export default function SettingsPage() {
       numericPrices[key] = parseFloat(value) || 0;
     });
 
-    await updateSettings.mutateAsync({ provider_prices: numericPrices });
+    await updateSettings.mutateAsync({
+      provider_prices: numericPrices,
+      active_ad_platforms: adPlatforms,
+    });
     setHasChanges(false);
   };
 
@@ -59,6 +85,37 @@ export default function SettingsPage() {
           Änderungen speichern
         </Button>
       </div>
+
+      {/* Active Ad Platforms */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Aktive Werbeplattformen</CardTitle>
+          <CardDescription>
+            Diese Einstellung steuert, ob Website-Besuche mit entsprechenden UTM-Parametern als bezahlter Traffic (Werbeanzeigen) oder als organischer Traffic gezählt werden. Lead Forms von Werbeplattformen werden immer als Werbeanzeigen gezählt.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {AD_PLATFORMS.map((platform) => (
+              <div key={platform.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                <div className="flex-1">
+                  <label htmlFor={`platform-${platform.id}`} className="text-sm font-medium text-gray-900 cursor-pointer">
+                    {platform.label}
+                  </label>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    UTM: {platform.utmSources.join(", ")}
+                  </p>
+                </div>
+                <Switch
+                  id={`platform-${platform.id}`}
+                  checked={adPlatforms[platform.id] || false}
+                  onCheckedChange={(checked) => handlePlatformToggle(platform.id, checked)}
+                />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Provider Prices */}
       <Card>
@@ -135,7 +192,7 @@ export default function SettingsPage() {
             </div>
             <div className="flex justify-between py-2">
               <span className="text-gray-500">Authentifizierung</span>
-              <span className="text-gray-700">Basic Auth (Gateway)</span>
+              <span className="text-gray-700">Öffentlich</span>
             </div>
           </div>
         </CardContent>

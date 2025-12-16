@@ -10,7 +10,7 @@ import { formatNumber, formatPercent } from "@/lib/utils";
 
 // Map mode to provider for funnel filtering
 const modeToProvider: Record<string, string> = {
-  ads: "metaleads",
+  ads: "ads",
   organic: "website",
 };
 
@@ -32,7 +32,7 @@ export default function FunnelPage() {
   if (isError) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Funnel-Analyse - {modeLabel}</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Website-Funnel - {modeLabel}</h1>
         <ErrorCard message="Funnel-Daten konnten nicht geladen werden" onRetry={() => refetch()} />
       </div>
     );
@@ -40,7 +40,7 @@ export default function FunnelPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Funnel-Analyse - {modeLabel}</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Website-Funnel - {modeLabel}</h1>
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

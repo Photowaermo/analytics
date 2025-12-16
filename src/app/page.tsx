@@ -1,13 +1,17 @@
 "use client";
 
-import { Users, ShoppingCart, DollarSign, TrendingUp, Target, Percent, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { de } from "date-fns/locale";
+import { Users, ShoppingCart, DollarSign, TrendingUp, Target, Percent, AlertTriangle, CheckCircle, XCircle, PiggyBank } from "lucide-react";
 import { useDateRange } from "@/lib/date-context";
 import { useMode, modeConfig } from "@/lib/mode-context";
-import { useOverview, useAttribution, useProviders } from "@/lib/queries";
+import { useOverview, useAttribution, useProviders, useJourneys } from "@/lib/queries";
 import { KpiCard, KpiCardSkeleton } from "@/components/ui/kpi-card";
 import { TrendChart, TrendChartSkeleton } from "@/components/charts/trend-chart";
 import { BarChartCard, BarChartSkeleton } from "@/components/charts/bar-chart";
+import { PieChartCard, PieChartSkeleton } from "@/components/charts/pie-chart";
 import { ErrorCard } from "@/components/ui/error-card";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -18,13 +22,24 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency, formatNumber, formatPercent, translateToGerman } from "@/lib/utils";
 
+// Map mode to provider parameter for API
+const modeToProvider: Record<string, string> = {
+  ads: "ads",
+  purchased: "purchased",
+  organic: "organic",
+};
+
 export default function OverviewPage() {
   const { dateRange } = useDateRange();
   const { mode } = useMode();
 
+  // Get provider for current mode
+  const provider = modeToProvider[mode];
+
   const { data: overview, isLoading: overviewLoading, isError: overviewError, refetch: refetchOverview } = useOverview(
     dateRange.startDate,
-    dateRange.endDate
+    dateRange.endDate,
+    provider
   );
   const { data: attribution, isLoading: attributionLoading, isError: attributionError, refetch: refetchAttribution } = useAttribution(
     dateRange.startDate,
@@ -35,6 +50,7 @@ export default function OverviewPage() {
     dateRange.startDate,
     dateRange.endDate
   );
+  const { data: journeys, isLoading: journeysLoading } = useJourneys(20, 0);
 
   // Filter providers by mode
   const modeProviders = providers?.filter(p =>
@@ -83,6 +99,188 @@ export default function OverviewPage() {
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Übersicht - {modeConfig[mode].label}</h1>
         <ErrorCard message="Übersichtsdaten konnten nicht geladen werden" onRetry={() => refetchOverview()} />
+      </div>
+    );
+  }
+
+  // All Mode Overview
+  if (mode === "all") {
+    // Use overview data for accurate global KPIs (includes revenue from all sources)
+    const totalLeads = overview?.total_leads || 0;
+    const totalSales = overview?.total_sales || 0;
+    const totalCost = overview?.total_spend || 0;
+    const totalRevenue = overview?.total_revenue || 0;
+    const totalProfit = overview?.profit || 0;
+    const conversionRate = overview?.conversion_rate || 0;
+    const overallRoas = overview?.roas || 0;
+
+    // Provider data for charts
+    const allProviders = providers || [];
+
+    // Category breakdown for pie chart
+    const adsProviders = ["metaleads"];
+    const purchasedProviders = ["bildleads", "wattfox", "eza", "interleads"];
+    const organicProviders = ["website"];
+
+    const adsLeads = allProviders.filter(p => adsProviders.includes(p.provider.toLowerCase())).reduce((sum, p) => sum + p.leads, 0);
+    const purchasedLeads = allProviders.filter(p => purchasedProviders.includes(p.provider.toLowerCase())).reduce((sum, p) => sum + p.leads, 0);
+    const organicLeads = allProviders.filter(p => organicProviders.includes(p.provider.toLowerCase())).reduce((sum, p) => sum + p.leads, 0);
+
+    const categoryData = [
+      { name: "Werbeanzeigen", value: adsLeads },
+      { name: "Gekaufte Leads", value: purchasedLeads },
+      { name: "Organisch", value: organicLeads },
+    ].filter(c => c.value > 0);
+
+    // Provider breakdown for bar chart
+    const providerData = allProviders
+      .filter(p => p.leads > 0)
+      .sort((a, b) => b.leads - a.leads)
+      .map(p => ({
+        name: p.provider.charAt(0).toUpperCase() + p.provider.slice(1),
+        fullName: p.provider.charAt(0).toUpperCase() + p.provider.slice(1),
+        value: p.leads,
+      }));
+
+    // Status colors and labels for leads table
+    const statusColors: Record<string, string> = {
+      new: "bg-blue-100 text-blue-800",
+      contacted: "bg-yellow-100 text-yellow-800",
+      qualified: "bg-purple-100 text-purple-800",
+      won: "bg-green-100 text-green-800",
+      lost: "bg-red-100 text-red-800",
+    };
+    const statusLabels: Record<string, string> = {
+      new: "Neu",
+      contacted: "Kontaktiert",
+      qualified: "Qualifiziert",
+      won: "Gewonnen",
+      lost: "Verloren",
+    };
+
+    const allLoading = overviewLoading || providersLoading || journeysLoading;
+
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900">Gesamtübersicht - Alle Quellen</h1>
+
+        {/* Main KPI Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {allLoading ? (
+            <>
+              <KpiCardSkeleton />
+              <KpiCardSkeleton />
+              <KpiCardSkeleton />
+              <KpiCardSkeleton />
+              <KpiCardSkeleton />
+              <KpiCardSkeleton />
+            </>
+          ) : (
+            <>
+              <KpiCard
+                title="Gesamt Leads"
+                value={formatNumber(totalLeads)}
+                icon={Users}
+              />
+              <KpiCard
+                title="Gesamt Verkäufe"
+                value={formatNumber(totalSales)}
+                icon={ShoppingCart}
+              />
+              <KpiCard
+                title="Konversionsrate"
+                value={formatPercent(conversionRate)}
+                icon={Percent}
+              />
+              <KpiCard
+                title="Gesamtkosten"
+                value={formatCurrency(totalCost)}
+                icon={DollarSign}
+              />
+              <KpiCard
+                title="Umsatz"
+                value={formatCurrency(totalRevenue)}
+                icon={TrendingUp}
+              />
+              <KpiCard
+                title="Gewinn"
+                value={formatCurrency(totalProfit)}
+                subtitle={overallRoas > 0 ? `ROAS: ${overallRoas.toFixed(2)}x` : ""}
+                icon={PiggyBank}
+              />
+            </>
+          )}
+        </div>
+
+        {/* Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {providersLoading ? (
+            <>
+              <PieChartSkeleton />
+              <BarChartSkeleton />
+            </>
+          ) : (
+            <>
+              {categoryData.length > 0 && (
+                <PieChartCard
+                  data={categoryData}
+                  title="Leads nach Kategorie"
+                />
+              )}
+              {providerData.length > 0 && (
+                <BarChartCard
+                  data={providerData}
+                  title="Leads nach Anbieter"
+                  horizontal
+                />
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Recent Leads Table */}
+        <div className="rounded-xl border border-gray-200/50 bg-white/70 backdrop-blur-sm shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Neueste Leads</h3>
+          </div>
+          {journeysLoading ? (
+            <div className="p-8 text-center text-gray-500">Laden...</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>E-Mail</TableHead>
+                  <TableHead>Quelle</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Datum</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {journeys?.map((lead) => (
+                  <TableRow key={lead.id}>
+                    <TableCell className="font-medium">{lead.email}</TableCell>
+                    <TableCell className="capitalize">{lead.source_name}</TableCell>
+                    <TableCell>
+                      <Badge className={statusColors[lead.crm_status] || "bg-gray-100 text-gray-800"}>
+                        {statusLabels[lead.crm_status] || lead.crm_status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {format(parseISO(lead.created_at), "d. MMM yyyy, HH:mm", { locale: de })}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {(!journeys || journeys.length === 0) && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                      Keine Leads gefunden
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </div>
       </div>
     );
   }
@@ -244,6 +442,22 @@ export default function OverviewPage() {
           )}
         </div>
 
+        {/* Revenue & Profit */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <KpiCard
+            title="Umsatz"
+            value={formatCurrency(overview?.total_revenue || 0)}
+            subtitle={modeSales > 0 ? "Aus gekauften Leads" : "Noch keine Verkäufe"}
+            icon={TrendingUp}
+          />
+          <KpiCard
+            title="Gewinn"
+            value={formatCurrency((overview?.total_revenue || 0) - modeCost)}
+            subtitle={(overview?.total_revenue || 0) > 0 ? `${(((overview?.total_revenue || 0) - modeCost) / (overview?.total_revenue || 1) * 100).toFixed(1)}% Marge` : ""}
+            icon={PiggyBank}
+          />
+        </div>
+
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {providersLoading ? (
@@ -382,10 +596,10 @@ export default function OverviewPage() {
               icon={Percent}
             />
             <KpiCard
-              title="Kosten"
-              value={formatCurrency(0)}
-              subtitle="Keine Akquisekosten"
-              icon={CheckCircle}
+              title="Umsatz"
+              value={formatCurrency(overview?.total_revenue || 0)}
+              subtitle="Keine Akquisekosten = 100% Gewinn"
+              icon={TrendingUp}
             />
           </>
         )}

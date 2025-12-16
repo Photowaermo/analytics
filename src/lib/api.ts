@@ -33,7 +33,10 @@ export interface Attribution {
   spend: number;
   roas: number;
   cpl: number;
+  impressions: number;
+  clicks: number;
   creative_thumbnail?: string;
+  created_date?: string;
 }
 
 export interface Provider {
@@ -49,6 +52,7 @@ export interface Lead {
   id: string;
   email: string;
   source_name: string;
+  submission_type: string;
   crm_status: string;
   created_at: string;
 }
@@ -70,6 +74,7 @@ export interface LeadJourney {
 
 export interface Settings {
   provider_prices: Record<string, number>;
+  active_ad_platforms?: Record<string, boolean>;
 }
 
 export interface HealthStatus {
@@ -97,8 +102,12 @@ async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> 
 }
 
 // API Functions
-export async function getOverview(startDate: string, endDate: string): Promise<OverviewStats> {
-  return fetchAPI(`/overview?start_date=${startDate}&end_date=${endDate}`);
+export async function getOverview(startDate: string, endDate: string, provider?: string): Promise<OverviewStats> {
+  const params = new URLSearchParams({ start_date: startDate, end_date: endDate });
+  if (provider) {
+    params.append("provider", provider);
+  }
+  return fetchAPI(`/overview?${params.toString()}`);
 }
 
 export async function getFunnel(startDate: string, endDate: string, provider?: string): Promise<FunnelStep[]> {
@@ -112,17 +121,32 @@ export async function getFunnel(startDate: string, endDate: string, provider?: s
 export async function getAttribution(
   startDate: string,
   endDate: string,
-  level: "campaign" | "adset" | "ad"
+  level: "campaign" | "adset" | "ad",
+  campaign?: string,
+  adset?: string
 ): Promise<Attribution[]> {
-  return fetchAPI(`/attribution?start_date=${startDate}&end_date=${endDate}&level=${level}`);
+  const params = new URLSearchParams({
+    start_date: startDate,
+    end_date: endDate,
+    level: level,
+  });
+  if (campaign) {
+    params.append("campaign", campaign);
+  }
+  if (adset) {
+    params.append("adset", adset);
+  }
+  return fetchAPI(`/attribution?${params.toString()}`);
 }
 
 export async function getProviders(startDate: string, endDate: string): Promise<Provider[]> {
   return fetchAPI(`/providers?start_date=${startDate}&end_date=${endDate}`);
 }
 
-export async function getJourneys(limit = 50, offset = 0): Promise<Lead[]> {
-  return fetchAPI(`/journeys/?limit=${limit}&offset=${offset}`);
+export async function getJourneys(limit = 50, offset = 0, provider?: string): Promise<Lead[]> {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (provider) params.append("provider", provider);
+  return fetchAPI(`/journeys/?${params.toString()}`);
 }
 
 export async function getJourneyDetail(leadId: string): Promise<LeadJourney> {

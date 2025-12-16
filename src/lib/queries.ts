@@ -16,22 +16,22 @@ import {
 
 // Query Keys
 export const queryKeys = {
-  overview: (startDate: string, endDate: string) => ["overview", startDate, endDate] as const,
+  overview: (startDate: string, endDate: string, provider?: string) => ["overview", startDate, endDate, provider] as const,
   funnel: (startDate: string, endDate: string, provider?: string) => ["funnel", startDate, endDate, provider] as const,
-  attribution: (startDate: string, endDate: string, level: string) =>
-    ["attribution", startDate, endDate, level] as const,
+  attribution: (startDate: string, endDate: string, level: string, campaign?: string, adset?: string) =>
+    ["attribution", startDate, endDate, level, campaign, adset] as const,
   providers: (startDate: string, endDate: string) => ["providers", startDate, endDate] as const,
-  journeys: (limit: number, offset: number) => ["journeys", limit, offset] as const,
+  journeys: (limit: number, offset: number, provider?: string) => ["journeys", limit, offset, provider] as const,
   journeyDetail: (id: string) => ["journey", id] as const,
   settings: ["settings"] as const,
   health: ["health"] as const,
 };
 
 // Hooks
-export function useOverview(startDate: string, endDate: string) {
+export function useOverview(startDate: string, endDate: string, provider?: string) {
   return useQuery({
-    queryKey: queryKeys.overview(startDate, endDate),
-    queryFn: () => getOverview(startDate, endDate),
+    queryKey: queryKeys.overview(startDate, endDate, provider),
+    queryFn: () => getOverview(startDate, endDate, provider),
   });
 }
 
@@ -45,11 +45,13 @@ export function useFunnel(startDate: string, endDate: string, provider?: string)
 export function useAttribution(
   startDate: string,
   endDate: string,
-  level: "campaign" | "adset" | "ad"
+  level: "campaign" | "adset" | "ad",
+  campaign?: string,
+  adset?: string
 ) {
   return useQuery({
-    queryKey: queryKeys.attribution(startDate, endDate, level),
-    queryFn: () => getAttribution(startDate, endDate, level),
+    queryKey: queryKeys.attribution(startDate, endDate, level, campaign, adset),
+    queryFn: () => getAttribution(startDate, endDate, level, campaign, adset),
   });
 }
 
@@ -60,10 +62,10 @@ export function useProviders(startDate: string, endDate: string) {
   });
 }
 
-export function useJourneys(limit = 50, offset = 0) {
+export function useJourneys(limit = 50, offset = 0, provider?: string) {
   return useQuery({
-    queryKey: queryKeys.journeys(limit, offset),
-    queryFn: () => getJourneys(limit, offset),
+    queryKey: queryKeys.journeys(limit, offset, provider),
+    queryFn: () => getJourneys(limit, offset, provider),
   });
 }
 

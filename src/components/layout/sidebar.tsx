@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Filter,
@@ -20,9 +20,12 @@ import { useMode, AnalyticsMode } from "@/lib/mode-context";
 
 // Navigation items per mode
 const navItemsByMode: Record<AnalyticsMode, { href: string; label: string; icon: typeof LayoutDashboard }[]> = {
+  all: [
+    { href: "/", label: "Übersicht", icon: LayoutDashboard },
+  ],
   ads: [
     { href: "/", label: "Übersicht", icon: LayoutDashboard },
-    { href: "/funnel", label: "Funnel", icon: Filter },
+    { href: "/funnel", label: "Website-Funnel", icon: Filter },
     { href: "/journeys", label: "Lead-Verlauf", icon: Route },
     { href: "/attribution", label: "Attribution", icon: Target },
     { href: "/costs", label: "Kosten & ROAS", icon: DollarSign },
@@ -32,7 +35,7 @@ const navItemsByMode: Record<AnalyticsMode, { href: string; label: string; icon:
   ],
   organic: [
     { href: "/", label: "Übersicht", icon: LayoutDashboard },
-    { href: "/funnel", label: "Funnel", icon: Filter },
+    { href: "/funnel", label: "Website-Funnel", icon: Filter },
     { href: "/journeys", label: "Lead-Verlauf", icon: Route },
   ],
 };
@@ -45,10 +48,22 @@ const sharedNavItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const { mode } = useMode();
 
   const modeNavItems = navItemsByMode[mode];
+
+  // Redirect to "/" if current path is not available in current mode
+  useEffect(() => {
+    const allValidPaths = [
+      ...modeNavItems.map(item => item.href),
+      ...sharedNavItems.map(item => item.href),
+    ];
+    if (!allValidPaths.includes(pathname)) {
+      router.replace("/");
+    }
+  }, [pathname, mode, modeNavItems, router]);
 
   return (
     <>

@@ -5,7 +5,7 @@ import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { Eye } from "lucide-react";
 import { useJourneys, useJourneyDetail } from "@/lib/queries";
-import { useMode, modeConfig } from "@/lib/mode-context";
+import { useMode } from "@/lib/mode-context";
 import {
   Table,
   TableBody,
@@ -40,20 +40,30 @@ const statusLabels: Record<string, string> = {
   lost: "Verloren",
 };
 
+// Map mode to provider for API filtering
+const modeToProvider: Record<string, string | undefined> = {
+  all: undefined,
+  ads: "ads",
+  organic: "organic",
+  purchased: "purchased",
+};
+
 export default function JourneysPage() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const { mode } = useMode();
-  const { data: leads, isLoading, isError, refetch } = useJourneys(100, 0);
+  const provider = modeToProvider[mode];
+  const { data: leads, isLoading, isError, refetch } = useJourneys(100, 0, provider);
   const { data: journeyDetail, isLoading: detailLoading, isError: detailError } = useJourneyDetail(selectedLeadId || "");
 
-  // Filter leads by mode
-  const modeProviders = modeConfig[mode].providers;
-  const filteredLeads = leads?.filter(lead => {
-    const sourceName = lead.source_name?.toLowerCase() || "";
-    return modeProviders.some(provider => sourceName.includes(provider));
-  }) || [];
+  const filteredLeads = leads || [];
 
-  const modeLabel = mode === "ads" ? "Werbeanzeigen" : "Organisch";
+  const modeLabels: Record<string, string> = {
+    all: "Alle",
+    ads: "Werbeanzeigen",
+    purchased: "Gekaufte Leads",
+    organic: "Organisch",
+  };
+  const modeLabel = modeLabels[mode] || mode;
 
   if (isError) {
     return (
@@ -77,6 +87,7 @@ export default function JourneysPage() {
               <TableRow>
                 <TableHead>E-Mail</TableHead>
                 <TableHead>Quelle</TableHead>
+                <TableHead>Formular</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Erstellt am</TableHead>
                 <TableHead className="text-right">Aktionen</TableHead>
@@ -86,7 +97,14 @@ export default function JourneysPage() {
               {filteredLeads.map((lead) => (
                 <TableRow key={lead.id}>
                   <TableCell className="font-medium">{lead.email}</TableCell>
-                  <TableCell>{lead.source_name}</TableCell>
+                  <TableCell className="capitalize">{lead.source_name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="font-normal">
+                      {lead.submission_type === "lead_form" ? "Lead-Formular" :
+                       lead.submission_type === "website" ? "Website" :
+                       lead.submission_type === "api" ? "API" : lead.submission_type}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     <Badge className={statusColors[lead.crm_status] || "bg-gray-100 text-gray-800"}>
                       {statusLabels[lead.crm_status] || lead.crm_status}
@@ -109,7 +127,7 @@ export default function JourneysPage() {
               ))}
               {filteredLeads.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                     Keine Leads für {modeLabel} gefunden
                   </TableCell>
                 </TableRow>
@@ -121,7 +139,7 @@ export default function JourneysPage() {
 
       {/* Journey Detail Modal */}
       <Dialog open={!!selectedLeadId} onOpenChange={() => setSelectedLeadId(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-white">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
           <DialogHeader>
             <DialogTitle>Lead-Verlauf</DialogTitle>
           </DialogHeader>
@@ -175,7 +193,7 @@ export default function JourneysPage() {
                               {format(parseISO(event.timestamp), "d. MMM, HH:mm", { locale: de })}
                             </span>
                           </div>
-                          <p className="mt-1 text-sm text-gray-600">{event.details}</p>
+                          <p className="mt-1 text-sm text-gray-600 break-all">{event.details}</p>
                         </div>
                       </div>
                     ))}

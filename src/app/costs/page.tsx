@@ -9,13 +9,24 @@ import { BarChartCard, BarChartSkeleton } from "@/components/charts/bar-chart";
 import { ErrorCard } from "@/components/ui/error-card";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 
+// Map mode to provider parameter for API
+const modeToProvider: Record<string, string> = {
+  ads: "ads",
+  purchased: "purchased",
+  organic: "organic",
+};
+
 export default function CostsPage() {
   const { dateRange } = useDateRange();
   const { mode } = useMode();
 
+  // Get provider for current mode
+  const provider = modeToProvider[mode];
+
   const { data: overview, isLoading: overviewLoading, isError: overviewError, refetch: refetchOverview } = useOverview(
     dateRange.startDate,
-    dateRange.endDate
+    dateRange.endDate,
+    provider
   );
   const { data: providers, isLoading: providersLoading } = useProviders(
     dateRange.startDate,
