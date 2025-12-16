@@ -1,7 +1,5 @@
 "use client";
 
-import { format, parseISO } from "date-fns";
-import { de } from "date-fns/locale";
 import { Users, ShoppingCart, DollarSign, TrendingUp, Target, Percent, AlertTriangle, CheckCircle, XCircle, PiggyBank } from "lucide-react";
 import { useDateRange } from "@/lib/date-context";
 import { useMode, modeConfig } from "@/lib/mode-context";
@@ -11,7 +9,6 @@ import { TrendChart, TrendChartSkeleton } from "@/components/charts/trend-chart"
 import { BarChartCard, BarChartSkeleton } from "@/components/charts/bar-chart";
 import { PieChartCard, PieChartSkeleton } from "@/components/charts/pie-chart";
 import { ErrorCard } from "@/components/ui/error-card";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -50,7 +47,9 @@ export default function OverviewPage() {
     dateRange.startDate,
     dateRange.endDate
   );
-  const { data: journeys, isLoading: journeysLoading } = useJourneys(20, 0);
+
+  // Fetch leads for ads mode submission type breakdown
+  const { data: adsLeads, isLoading: adsLeadsLoading } = useJourneys(500, 0, "ads");
 
   // Filter providers by mode
   const modeProviders = providers?.filter(p =>
@@ -117,20 +116,56 @@ export default function OverviewPage() {
     // Provider data for charts
     const allProviders = providers || [];
 
-    // Category breakdown for pie chart
+    // Category breakdown
     const adsProviders = ["metaleads"];
     const purchasedProviders = ["bildleads", "wattfox", "eza", "interleads"];
     const organicProviders = ["website"];
 
-    const adsLeads = allProviders.filter(p => adsProviders.includes(p.provider.toLowerCase())).reduce((sum, p) => sum + p.leads, 0);
-    const purchasedLeads = allProviders.filter(p => purchasedProviders.includes(p.provider.toLowerCase())).reduce((sum, p) => sum + p.leads, 0);
-    const organicLeads = allProviders.filter(p => organicProviders.includes(p.provider.toLowerCase())).reduce((sum, p) => sum + p.leads, 0);
+    const getProvidersByCategory = (categoryProviders: string[]) =>
+      allProviders.filter(p => categoryProviders.includes(p.provider.toLowerCase()));
 
-    const categoryData = [
-      { name: "Werbeanzeigen", value: adsLeads },
-      { name: "Gekaufte Leads", value: purchasedLeads },
-      { name: "Organisch", value: organicLeads },
-    ].filter(c => c.value > 0);
+    const adsData = getProvidersByCategory(adsProviders);
+    const purchasedData = getProvidersByCategory(purchasedProviders);
+    const organicData = getProvidersByCategory(organicProviders);
+
+    // Calculate category metrics
+    const categoryMetrics = [
+      {
+        name: "Werbeanzeigen",
+        leads: adsData.reduce((sum, p) => sum + p.leads, 0),
+        sales: adsData.reduce((sum, p) => sum + p.sales, 0),
+        cost: adsData.reduce((sum, p) => sum + p.cost, 0),
+        revenue: adsData.reduce((sum, p) => sum + (p.roas * p.cost), 0),
+      },
+      {
+        name: "Gekaufte Leads",
+        leads: purchasedData.reduce((sum, p) => sum + p.leads, 0),
+        sales: purchasedData.reduce((sum, p) => sum + p.sales, 0),
+        cost: purchasedData.reduce((sum, p) => sum + p.cost, 0),
+        revenue: purchasedData.reduce((sum, p) => sum + (p.roas * p.cost), 0),
+      },
+      {
+        name: "Organisch",
+        leads: organicData.reduce((sum, p) => sum + p.leads, 0),
+        sales: organicData.reduce((sum, p) => sum + p.sales, 0),
+        cost: 0, // Organic has no cost
+        revenue: organicData.reduce((sum, p) => sum + (p.roas * p.cost), 0),
+      },
+    ].map(cat => ({
+      ...cat,
+      conversion: cat.leads > 0 ? (cat.sales / cat.leads) * 100 : 0,
+      profit: cat.revenue - cat.cost,
+    }));
+
+    // Pie chart data for leads
+    const categoryLeadsData = categoryMetrics
+      .filter(c => c.leads > 0)
+      .map(c => ({ name: c.name, value: c.leads }));
+
+    // Pie chart data for revenue
+    const categoryRevenueData = categoryMetrics
+      .filter(c => c.revenue > 0)
+      .map(c => ({ name: c.name, value: c.revenue }));
 
     // Provider breakdown for bar chart
     const providerData = allProviders
@@ -142,23 +177,7 @@ export default function OverviewPage() {
         value: p.leads,
       }));
 
-    // Status colors and labels for leads table
-    const statusColors: Record<string, string> = {
-      new: "bg-blue-100 text-blue-800",
-      contacted: "bg-yellow-100 text-yellow-800",
-      qualified: "bg-purple-100 text-purple-800",
-      won: "bg-green-100 text-green-800",
-      lost: "bg-red-100 text-red-800",
-    };
-    const statusLabels: Record<string, string> = {
-      new: "Neu",
-      contacted: "Kontaktiert",
-      qualified: "Qualifiziert",
-      won: "Gewonnen",
-      lost: "Verloren",
-    };
-
-    const allLoading = overviewLoading || providersLoading || journeysLoading;
+    const allLoading = overviewLoading || providersLoading;
 
     return (
       <div className="space-y-6">
@@ -212,7 +231,7 @@ export default function OverviewPage() {
           )}
         </div>
 
-        {/* Charts Row */}
+        {/* Charts Row - Leads by Category & Provider */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {providersLoading ? (
             <>
@@ -221,9 +240,9 @@ export default function OverviewPage() {
             </>
           ) : (
             <>
-              {categoryData.length > 0 && (
+              {categoryLeadsData.length > 0 && (
                 <PieChartCard
-                  data={categoryData}
+                  data={categoryLeadsData}
                   title="Leads nach Kategorie"
                 />
               )}
@@ -238,45 +257,67 @@ export default function OverviewPage() {
           )}
         </div>
 
-        {/* Recent Leads Table */}
+        {/* Trend Chart */}
+        {overviewLoading ? (
+          <TrendChartSkeleton />
+        ) : overview?.trends ? (
+          <TrendChart data={overview.trends} />
+        ) : null}
+
+        {/* Revenue by Category */}
+        {!providersLoading && categoryRevenueData.length > 0 && (
+          <PieChartCard
+            data={categoryRevenueData}
+            title="Umsatz nach Kategorie"
+          />
+        )}
+
+        {/* Category Comparison Table */}
         <div className="rounded-xl border border-gray-200/50 bg-white/70 backdrop-blur-sm shadow-sm overflow-hidden">
           <div className="p-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Neueste Leads</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Kategorie-Vergleich</h3>
           </div>
-          {journeysLoading ? (
+          {providersLoading ? (
             <div className="p-8 text-center text-gray-500">Laden...</div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>E-Mail</TableHead>
-                  <TableHead>Quelle</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Datum</TableHead>
+                  <TableHead>Kategorie</TableHead>
+                  <TableHead className="text-right">Leads</TableHead>
+                  <TableHead className="text-right">Verkäufe</TableHead>
+                  <TableHead className="text-right">Konversion</TableHead>
+                  <TableHead className="text-right">Kosten</TableHead>
+                  <TableHead className="text-right">Umsatz</TableHead>
+                  <TableHead className="text-right">Gewinn</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {journeys?.map((lead) => (
-                  <TableRow key={lead.id}>
-                    <TableCell className="font-medium">{lead.email}</TableCell>
-                    <TableCell className="capitalize">{lead.source_name}</TableCell>
-                    <TableCell>
-                      <Badge className={statusColors[lead.crm_status] || "bg-gray-100 text-gray-800"}>
-                        {statusLabels[lead.crm_status] || lead.crm_status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {format(parseISO(lead.created_at), "d. MMM yyyy, HH:mm", { locale: de })}
+                {categoryMetrics.map((cat) => (
+                  <TableRow key={cat.name}>
+                    <TableCell className="font-medium">{cat.name}</TableCell>
+                    <TableCell className="text-right">{formatNumber(cat.leads)}</TableCell>
+                    <TableCell className="text-right">{formatNumber(cat.sales)}</TableCell>
+                    <TableCell className="text-right">{formatPercent(cat.conversion)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(cat.cost)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(cat.revenue)}</TableCell>
+                    <TableCell className={`text-right font-medium ${cat.profit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                      {formatCurrency(cat.profit)}
                     </TableCell>
                   </TableRow>
                 ))}
-                {(!journeys || journeys.length === 0) && (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-gray-500">
-                      Keine Leads gefunden
-                    </TableCell>
-                  </TableRow>
-                )}
+                {/* Total Row */}
+                <TableRow className="bg-gray-50 font-semibold">
+                  <TableCell>Gesamt</TableCell>
+                  <TableCell className="text-right">{formatNumber(totalLeads)}</TableCell>
+                  <TableCell className="text-right">{formatNumber(totalSales)}</TableCell>
+                  <TableCell className="text-right">{formatPercent(conversionRate)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(totalCost)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(totalRevenue)}</TableCell>
+                  <TableCell className={`text-right ${totalProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                    {formatCurrency(totalProfit)}
+                  </TableCell>
+                </TableRow>
               </TableBody>
             </Table>
           )}
@@ -287,6 +328,15 @@ export default function OverviewPage() {
 
   // Ads Mode Overview
   if (mode === "ads") {
+    // Calculate submission type breakdown
+    const leadFormCount = adsLeads?.filter(l => l.submission_type === "lead_form").length || 0;
+    const websiteCount = adsLeads?.filter(l => l.submission_type === "website").length || 0;
+
+    const submissionTypeData = [
+      { name: "Lead-Formular", value: leadFormCount },
+      { name: "Website", value: websiteCount },
+    ].filter(d => d.value > 0);
+
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Werbeanzeigen - Übersicht</h1>
@@ -355,24 +405,21 @@ export default function OverviewPage() {
           )}
         </div>
 
-        {/* Charts Row */}
+        {/* Charts Row - Submission Type & Trend */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {adsLeadsLoading ? (
+            <PieChartSkeleton />
+          ) : submissionTypeData.length > 0 ? (
+            <PieChartCard
+              data={submissionTypeData}
+              title="Leads nach Formular-Typ"
+            />
+          ) : null}
+
           {overviewLoading ? (
             <TrendChartSkeleton />
           ) : overview?.trends ? (
             <TrendChart data={overview.trends} />
-          ) : null}
-
-          {attributionLoading ? (
-            <BarChartSkeleton />
-          ) : attributionError ? (
-            <ErrorCard message="Kampagnendaten konnten nicht geladen werden" onRetry={() => refetchAttribution()} />
-          ) : campaignData.length > 0 ? (
-            <BarChartCard
-              data={campaignData}
-              title="Leads nach Kampagne"
-              horizontal
-            />
           ) : null}
         </div>
 

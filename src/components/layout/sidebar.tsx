@@ -14,6 +14,7 @@ import {
   Settings,
   Menu,
   X,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMode, AnalyticsMode } from "@/lib/mode-context";
@@ -22,6 +23,7 @@ import { useMode, AnalyticsMode } from "@/lib/mode-context";
 const navItemsByMode: Record<AnalyticsMode, { href: string; label: string; icon: typeof LayoutDashboard }[]> = {
   all: [
     { href: "/", label: "Übersicht", icon: LayoutDashboard },
+    { href: "/leads", label: "Neueste Leads", icon: Users },
   ],
   ads: [
     { href: "/", label: "Übersicht", icon: LayoutDashboard },
