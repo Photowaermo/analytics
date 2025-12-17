@@ -16,7 +16,7 @@ export const validModes: AnalyticsMode[] = ["all", "ads", "purchased", "organic"
 
 // Pages available per mode
 export const pagesByMode: Record<AnalyticsMode, string[]> = {
-  all: ["", "leads"],
+  all: ["", "leads", "unmatched"],
   ads: ["", "funnel", "journeys", "attribution", "costs"],
   purchased: [""],
   organic: ["", "funnel", "journeys"],

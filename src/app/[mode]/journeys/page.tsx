@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useJourneys, useJourneyDetail } from "@/lib/queries";
 import { useMode } from "@/lib/mode-context";
 import { usePlatform } from "@/lib/platform-context";
+import { useDateRange } from "@/lib/date-context";
 import {
   Table,
   TableBody,
@@ -54,10 +55,11 @@ export default function JourneysPage() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const { mode } = useMode();
   const { platformParam } = usePlatform();
+  const { dateRange } = useDateRange();
   const provider = modeToProvider[mode];
   // Only apply platform filter when in ads mode
   const platform = mode === "ads" ? platformParam : undefined;
-  const { data: leads, isLoading, isError, refetch } = useJourneys(100, 0, provider, platform);
+  const { data: leads, isLoading, isError, refetch } = useJourneys(100, 0, provider, platform, dateRange.startDate, dateRange.endDate);
   const { data: journeyDetail, isLoading: detailLoading, isError: detailError } = useJourneyDetail(selectedLeadId || "");
 
   const filteredLeads = leads || [];

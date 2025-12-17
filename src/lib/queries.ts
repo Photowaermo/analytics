@@ -11,6 +11,7 @@ import {
   getSettings,
   updateSettings,
   getHealth,
+  getUnmatched,
   type Settings,
 } from "./api";
 
@@ -24,11 +25,12 @@ export const queryKeys = {
     ["attribution", startDate, endDate, level, campaign, adset, platform] as const,
   providers: (startDate: string, endDate: string, platform?: string) =>
     ["providers", startDate, endDate, platform] as const,
-  journeys: (limit: number, offset: number, provider?: string, platform?: string) =>
-    ["journeys", limit, offset, provider, platform] as const,
+  journeys: (limit: number, offset: number, provider?: string, platform?: string, startDate?: string, endDate?: string) =>
+    ["journeys", limit, offset, provider, platform, startDate, endDate] as const,
   journeyDetail: (id: string) => ["journey", id] as const,
   settings: ["settings"] as const,
   health: ["health"] as const,
+  unmatched: (limit: number) => ["unmatched", limit] as const,
 };
 
 // Hooks
@@ -67,10 +69,10 @@ export function useProviders(startDate: string, endDate: string, platform?: stri
   });
 }
 
-export function useJourneys(limit = 50, offset = 0, provider?: string, platform?: string) {
+export function useJourneys(limit = 50, offset = 0, provider?: string, platform?: string, startDate?: string, endDate?: string) {
   return useQuery({
-    queryKey: queryKeys.journeys(limit, offset, provider, platform),
-    queryFn: () => getJourneys(limit, offset, provider, platform),
+    queryKey: queryKeys.journeys(limit, offset, provider, platform, startDate, endDate),
+    queryFn: () => getJourneys(limit, offset, provider, platform, startDate, endDate),
   });
 }
 
@@ -104,5 +106,12 @@ export function useHealth() {
     queryKey: queryKeys.health,
     queryFn: getHealth,
     refetchInterval: 30000, // Refresh every 30 seconds
+  });
+}
+
+export function useUnmatched(limit = 100) {
+  return useQuery({
+    queryKey: queryKeys.unmatched(limit),
+    queryFn: () => getUnmatched(limit),
   });
 }

@@ -69,12 +69,6 @@ export default function CostsPage() {
   const modeMargin = modeRevenue > 0 ? (modeProfit / modeRevenue) * 100 : 0;
 
   // Chart data
-  const cplChartData = modeProviders.map((p) => ({
-    name: p.provider.charAt(0).toUpperCase() + p.provider.slice(1),
-    fullName: p.provider.charAt(0).toUpperCase() + p.provider.slice(1),
-    value: p.cpl,
-  }));
-
   const roasChartData = modeProviders.map((p) => ({
     name: p.provider.charAt(0).toUpperCase() + p.provider.slice(1),
     fullName: p.provider.charAt(0).toUpperCase() + p.provider.slice(1),
@@ -213,72 +207,6 @@ export default function CostsPage() {
     );
   }
 
-  // Purchased Mode - Simplified costs view
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Kosten - Gekaufte Leads</h1>
-
-      {/* Main KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {isLoading ? (
-          <>
-            <KpiCardSkeleton />
-            <KpiCardSkeleton />
-            <KpiCardSkeleton />
-            <KpiCardSkeleton />
-          </>
-        ) : (
-          <>
-            <KpiCard
-              title="Gesamtkosten"
-              value={formatCurrency(modeCost)}
-              icon={DollarSign}
-            />
-            <KpiCard
-              title="Leads gekauft"
-              value={modeLeads.toString()}
-            />
-            <KpiCard
-              title="Kosten pro Lead"
-              value={formatCurrency(modeCpl)}
-              icon={Target}
-            />
-            <KpiCard
-              title="Kosten pro Verkauf"
-              value={formatCurrency(modeCps)}
-              icon={Target}
-            />
-          </>
-        )}
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {providersLoading ? (
-          <BarChartSkeleton />
-        ) : cplChartData.length > 0 ? (
-          <BarChartCard data={cplChartData} title="Kosten pro Lead nach Anbieter" horizontal />
-        ) : null}
-
-        {/* Cost Breakdown */}
-        <div className="rounded-xl border border-gray-200/50 bg-white/70 p-6 backdrop-blur-sm shadow-sm">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">Kostenübersicht nach Anbieter</h3>
-          <div className="space-y-3">
-            {modeProviders.map((provider) => (
-              <div key={provider.provider} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                <span className="font-medium capitalize">{provider.provider}</span>
-                <div className="text-right">
-                  <span className="font-semibold">{formatCurrency(provider.cost)}</span>
-                  <span className="text-gray-500 text-sm block">{provider.leads} Leads</span>
-                </div>
-              </div>
-            ))}
-            {modeProviders.length === 0 && (
-              <p className="text-gray-500 text-center py-4">Keine Daten verfügbar</p>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  // This page is only available in ads mode
+  return null;
 }

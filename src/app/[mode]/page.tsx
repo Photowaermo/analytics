@@ -63,7 +63,7 @@ export default function OverviewPage() {
   );
 
   // Fetch leads for ads mode submission type breakdown
-  const { data: adsLeads, isLoading: adsLeadsLoading } = useJourneys(500, 0, "ads", platform);
+  const { data: adsLeads, isLoading: adsLeadsLoading } = useJourneys(500, 0, "ads", platform, dateRange.startDate, dateRange.endDate);
 
   // Filter providers by mode (use dynamic adProviders for ads mode)
   const modeProvidersList = mode === "ads" ? adProviders : modeConfig[mode].providers;

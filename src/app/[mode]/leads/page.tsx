@@ -5,6 +5,7 @@ import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { Eye } from "lucide-react";
 import { useJourneys, useJourneyDetail } from "@/lib/queries";
+import { useDateRange } from "@/lib/date-context";
 import {
   Table,
   TableBody,
@@ -41,8 +42,9 @@ const statusLabels: Record<string, string> = {
 
 export default function LeadsPage() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const { dateRange } = useDateRange();
   // Fetch all leads without provider filter
-  const { data: leads, isLoading, isError, refetch } = useJourneys(100, 0);
+  const { data: leads, isLoading, isError, refetch } = useJourneys(250, 0, undefined, undefined, dateRange.startDate, dateRange.endDate);
   const { data: journeyDetail, isLoading: detailLoading, isError: detailError } = useJourneyDetail(selectedLeadId || "");
 
   if (isError) {

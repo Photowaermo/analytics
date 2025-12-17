@@ -87,6 +87,16 @@ export interface HealthStatus {
   db: string;
 }
 
+export interface UnmatchedEvent {
+  id: string;
+  created_at: string;
+  pulse_id: string;
+  board_id: number;
+  email_extracted: string;
+  reason: string;
+  payload: Record<string, unknown>;
+}
+
 // API Client
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://leads.photowaermo.de/analytics";
 
@@ -162,9 +172,11 @@ export async function getProviders(startDate: string, endDate: string, platform?
   return fetchAPI(`/providers?${params.toString()}`);
 }
 
-export async function getJourneys(limit = 50, offset = 0, provider?: string, platform?: string): Promise<Lead[]> {
+export async function getJourneys(limit = 50, offset = 0, provider?: string, platform?: string, startDate?: string, endDate?: string): Promise<Lead[]> {
   const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
   if (provider) params.append("provider", provider);
+  if (startDate) params.append("start_date", startDate);
+  if (endDate) params.append("end_date", endDate);
   appendPlatformParams(params, platform);
   return fetchAPI(`/journeys/?${params.toString()}`);
 }
@@ -186,4 +198,9 @@ export async function updateSettings(settings: Settings): Promise<Settings> {
 
 export async function getHealth(): Promise<HealthStatus> {
   return fetchAPI("/health");
+}
+
+export async function getUnmatched(limit = 100): Promise<UnmatchedEvent[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  return fetchAPI(`/unmatched?${params.toString()}`);
 }

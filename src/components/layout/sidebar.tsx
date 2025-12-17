@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Users,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMode, AnalyticsMode } from "@/lib/mode-context";
@@ -24,6 +25,7 @@ const navItemsByMode: Record<AnalyticsMode, { path: string; label: string; icon:
   all: [
     { path: "", label: "Übersicht", icon: LayoutDashboard },
     { path: "leads", label: "Neueste Leads", icon: Users },
+    { path: "unmatched", label: "Verlorene Signale", icon: AlertTriangle },
   ],
   ads: [
     { path: "", label: "Übersicht", icon: LayoutDashboard },
