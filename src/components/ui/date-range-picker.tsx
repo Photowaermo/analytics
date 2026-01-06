@@ -68,10 +68,14 @@ export function DateRangePicker() {
                 type="date"
                 value={dateRange.startDate}
                 onChange={(e) => {
-                  setActivePreset("custom");
-                  setDateRange({ ...dateRange, startDate: e.target.value });
+                  if (e.target.value) {
+                    setActivePreset("custom");
+                    setDateRange({ ...dateRange, startDate: e.target.value });
+                  }
                 }}
-                className="w-full rounded border border-gray-200 px-2 py-1 text-sm"
+                onClick={(e) => e.currentTarget.showPicker()}
+                onKeyDown={(e) => e.preventDefault()}
+                className="w-full rounded border border-gray-200 px-2 py-1 text-sm cursor-pointer"
               />
             </div>
             <div className="px-3 py-2">
@@ -80,10 +84,14 @@ export function DateRangePicker() {
                 type="date"
                 value={dateRange.endDate}
                 onChange={(e) => {
-                  setActivePreset("custom");
-                  setDateRange({ ...dateRange, endDate: e.target.value });
+                  if (e.target.value) {
+                    setActivePreset("custom");
+                    setDateRange({ ...dateRange, endDate: e.target.value });
+                  }
                 }}
-                className="w-full rounded border border-gray-200 px-2 py-1 text-sm"
+                onClick={(e) => e.currentTarget.showPicker()}
+                onKeyDown={(e) => e.preventDefault()}
+                className="w-full rounded border border-gray-200 px-2 py-1 text-sm cursor-pointer"
               />
             </div>
           </div>

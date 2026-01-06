@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
-import { Eye } from "lucide-react";
+import { Eye, Search } from "lucide-react";
 import { useJourneys, useJourneyDetail } from "@/lib/queries";
 import { useDateRange } from "@/lib/date-context";
 import {
@@ -19,10 +19,19 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ErrorCard } from "@/components/ui/error-card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const statusColors: Record<string, string> = {
   new: "bg-blue-100 text-blue-800",
@@ -30,6 +39,7 @@ const statusColors: Record<string, string> = {
   qualified: "bg-purple-100 text-purple-800",
   won: "bg-green-100 text-green-800",
   lost: "bg-red-100 text-red-800",
+  synced: "bg-cyan-100 text-cyan-800",
 };
 
 const statusLabels: Record<string, string> = {
@@ -38,14 +48,74 @@ const statusLabels: Record<string, string> = {
   qualified: "Qualifiziert",
   won: "Gewonnen",
   lost: "Verloren",
+  synced: "Synchronisiert",
 };
+
+const sourceOptions = [
+  { value: "all", label: "Alle Quellen" },
+  { value: "metaleads", label: "Meta" },
+  { value: "google", label: "Google" },
+  { value: "tiktok", label: "TikTok" },
+  { value: "website", label: "Website" },
+  { value: "bildleads", label: "BildLeads" },
+  { value: "wattfox", label: "Wattfox" },
+  { value: "eza", label: "EZA" },
+  { value: "interleads", label: "Interleads" },
+];
+
+const formOptions = [
+  { value: "all", label: "Alle Formulare" },
+  { value: "lead_form", label: "Lead-Formular" },
+  { value: "website", label: "Website" },
+  { value: "api", label: "API" },
+];
+
+const statusOptions = [
+  { value: "all", label: "Alle Status" },
+  { value: "new", label: "Neu" },
+  { value: "contacted", label: "Kontaktiert" },
+  { value: "qualified", label: "Qualifiziert" },
+  { value: "won", label: "Gewonnen" },
+  { value: "lost", label: "Verloren" },
+  { value: "synced", label: "Synchronisiert" },
+];
 
 export default function LeadsPage() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const [emailFilter, setEmailFilter] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const [formFilter, setFormFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+
   const { dateRange } = useDateRange();
   // Fetch all leads without provider filter
   const { data: leads, isLoading, isError, refetch } = useJourneys(250, 0, undefined, undefined, dateRange.startDate, dateRange.endDate);
   const { data: journeyDetail, isLoading: detailLoading, isError: detailError } = useJourneyDetail(selectedLeadId || "");
+
+  // Filter leads based on selected filters
+  const filteredLeads = useMemo(() => {
+    return (leads || []).filter(lead => {
+      // Email search (case-insensitive)
+      if (emailFilter && !lead.email.toLowerCase().includes(emailFilter.toLowerCase())) {
+        return false;
+      }
+      // Source filter
+      if (sourceFilter !== "all" && lead.source_name !== sourceFilter) {
+        return false;
+      }
+      // Form type filter
+      if (formFilter !== "all" && lead.submission_type !== formFilter) {
+        return false;
+      }
+      // Status filter
+      if (statusFilter !== "all" && lead.crm_status !== statusFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [leads, emailFilter, sourceFilter, formFilter, statusFilter]);
+
+  const hasActiveFilters = emailFilter || sourceFilter !== "all" || formFilter !== "all" || statusFilter !== "all";
 
   if (isError) {
     return (
@@ -58,7 +128,63 @@ export default function LeadsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Neueste Leads</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Neueste Leads</h1>
+        {hasActiveFilters && leads && (
+          <span className="text-sm text-gray-500">
+            {filteredLeads.length} von {leads.length} Leads
+          </span>
+        )}
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3">
+        <div className="relative flex-1 min-w-[200px] max-w-[300px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="E-Mail suchen..."
+            value={emailFilter}
+            onChange={(e) => setEmailFilter(e.target.value)}
+            className="pl-9 bg-white"
+          />
+        </div>
+        <Select value={sourceFilter} onValueChange={setSourceFilter}>
+          <SelectTrigger className="w-[160px] bg-white">
+            <SelectValue placeholder="Quelle" />
+          </SelectTrigger>
+          <SelectContent className="bg-white">
+            {sourceOptions.map(option => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={formFilter} onValueChange={setFormFilter}>
+          <SelectTrigger className="w-[160px] bg-white">
+            <SelectValue placeholder="Formular" />
+          </SelectTrigger>
+          <SelectContent className="bg-white">
+            {formOptions.map(option => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[160px] bg-white">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent className="bg-white">
+            {statusOptions.map(option => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       <div className="rounded-xl border border-gray-200/50 bg-white/70 backdrop-blur-sm shadow-sm overflow-hidden">
         {isLoading ? (
@@ -76,7 +202,7 @@ export default function LeadsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {leads?.map((lead) => (
+              {filteredLeads.map((lead) => (
                 <TableRow key={lead.id}>
                   <TableCell className="font-medium">{lead.email}</TableCell>
                   <TableCell className="capitalize">{lead.source_name}</TableCell>
@@ -107,10 +233,10 @@ export default function LeadsPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {(!leads || leads.length === 0) && (
+              {filteredLeads.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                    Keine Leads gefunden
+                    {hasActiveFilters ? "Keine Leads mit diesen Filtern gefunden" : "Keine Leads gefunden"}
                   </TableCell>
                 </TableRow>
               )}
@@ -124,6 +250,7 @@ export default function LeadsPage() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
           <DialogHeader>
             <DialogTitle>Lead-Verlauf</DialogTitle>
+            <DialogDescription>Timeline und Details des ausgewählten Leads</DialogDescription>
           </DialogHeader>
 
           {detailLoading ? (

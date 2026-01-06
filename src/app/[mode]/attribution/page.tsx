@@ -44,6 +44,30 @@ interface BreadcrumbItem {
 type SortBy = "roas" | "leads" | "cpl";
 type TopCount = 3 | 5 | 10;
 
+// Status colors and labels for campaign/adset/ad status
+const statusConfig: Record<string, { label: string; className: string }> = {
+  ACTIVE: { label: "Aktiv", className: "bg-green-100 text-green-800" },
+  PAUSED: { label: "Pausiert", className: "bg-yellow-100 text-yellow-800" },
+  DELETED: { label: "Gelöscht", className: "bg-red-100 text-red-800" },
+  ARCHIVED: { label: "Archiviert", className: "bg-gray-100 text-gray-800" },
+  PENDING_REVIEW: { label: "In Prüfung", className: "bg-blue-100 text-blue-800" },
+  DISAPPROVED: { label: "Abgelehnt", className: "bg-red-100 text-red-800" },
+  PREAPPROVED: { label: "Vorab genehmigt", className: "bg-blue-100 text-blue-800" },
+  PENDING_BILLING_INFO: { label: "Zahlung ausstehend", className: "bg-orange-100 text-orange-800" },
+  CAMPAIGN_PAUSED: { label: "Kampagne pausiert", className: "bg-yellow-100 text-yellow-800" },
+  ADSET_PAUSED: { label: "Anzeigengruppe pausiert", className: "bg-yellow-100 text-yellow-800" },
+};
+
+// Campaign objective labels
+const objectiveConfig: Record<string, { label: string; className: string }> = {
+  OUTCOME_LEADS: { label: "Leads", className: "bg-blue-100 text-blue-800" },
+  OUTCOME_ENGAGEMENT: { label: "Interaktion", className: "bg-purple-100 text-purple-800" },
+  OUTCOME_TRAFFIC: { label: "Traffic", className: "bg-cyan-100 text-cyan-800" },
+  LINK_CLICKS: { label: "Traffic", className: "bg-cyan-100 text-cyan-800" },
+  OUTCOME_SALES: { label: "Verkäufe", className: "bg-green-100 text-green-800" },
+  OUTCOME_AWARENESS: { label: "Bekanntheit", className: "bg-orange-100 text-orange-800" },
+};
+
 export default function AttributionPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -391,6 +415,8 @@ export default function AttributionPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead>Status</TableHead>
+                  {currentLevel === "campaign" && <TableHead>Typ</TableHead>}
                   {currentLevel === "ad" && <TableHead>Creative</TableHead>}
                   <TableHead className="text-right">Impressionen</TableHead>
                   <TableHead className="text-right">Klicks</TableHead>
@@ -424,6 +450,26 @@ export default function AttributionPage() {
                           )}
                         </div>
                       </TableCell>
+                      <TableCell>
+                        {item.effective_status ? (
+                          <Badge className={statusConfig[item.effective_status]?.className || "bg-gray-100 text-gray-800"}>
+                            {statusConfig[item.effective_status]?.label || item.effective_status}
+                          </Badge>
+                        ) : (
+                          <span className="text-gray-400 text-sm">-</span>
+                        )}
+                      </TableCell>
+                      {currentLevel === "campaign" && (
+                        <TableCell>
+                          {item.objective ? (
+                            <Badge variant="outline" className={objectiveConfig[item.objective]?.className || "bg-gray-100 text-gray-800"}>
+                              {objectiveConfig[item.objective]?.label || item.objective}
+                            </Badge>
+                          ) : (
+                            <span className="text-gray-400 text-sm">-</span>
+                          )}
+                        </TableCell>
+                      )}
                       {currentLevel === "ad" && (
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           {item.creative_thumbnail ? (
@@ -476,7 +522,7 @@ export default function AttributionPage() {
                 })}
                 {sortedData.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={currentLevel === "ad" ? 9 : 10} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={currentLevel === "campaign" ? 12 : currentLevel === "ad" ? 10 : 11} className="text-center py-8 text-gray-500">
                       Keine Daten verfügbar
                     </TableCell>
                   </TableRow>

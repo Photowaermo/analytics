@@ -27,6 +27,9 @@ export interface FunnelStep {
 
 export interface Attribution {
   name: string;
+  status?: string;
+  effective_status?: string;
+  objective?: string;
   leads: number;
   sales: number;
   revenue: number;
