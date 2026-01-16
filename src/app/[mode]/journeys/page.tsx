@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { Eye } from "lucide-react";
@@ -25,23 +25,48 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ErrorCard } from "@/components/ui/error-card";
 
 const statusColors: Record<string, string> = {
   new: "bg-blue-100 text-blue-800",
   contacted: "bg-yellow-100 text-yellow-800",
   qualified: "bg-purple-100 text-purple-800",
+  booked: "bg-indigo-100 text-indigo-800",
+  cancelled_booking: "bg-orange-100 text-orange-800",
   won: "bg-green-100 text-green-800",
   lost: "bg-red-100 text-red-800",
+  synced: "bg-gray-100 text-gray-800",
 };
 
 const statusLabels: Record<string, string> = {
   new: "Neu",
   contacted: "Kontaktiert",
   qualified: "Qualifiziert",
+  booked: "Termin gebucht",
+  cancelled_booking: "Termin storniert",
   won: "Gewonnen",
   lost: "Verloren",
+  synced: "Synchronisiert",
 };
+
+const statusOptions = [
+  { value: "all", label: "Alle Status" },
+  { value: "new", label: "Neu" },
+  { value: "contacted", label: "Kontaktiert" },
+  { value: "qualified", label: "Qualifiziert" },
+  { value: "booked", label: "Termin gebucht" },
+  { value: "cancelled_booking", label: "Termin storniert" },
+  { value: "won", label: "Gewonnen" },
+  { value: "lost", label: "Verloren" },
+  { value: "synced", label: "Synchronisiert" },
+];
 
 // Map mode to provider for API filtering
 const modeToProvider: Record<string, string | undefined> = {
@@ -53,16 +78,36 @@ const modeToProvider: Record<string, string | undefined> = {
 
 export default function JourneysPage() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [campaignFilter, setCampaignFilter] = useState("all");
   const { mode } = useMode();
   const { platformParam } = usePlatform();
   const { dateRange } = useDateRange();
   const provider = modeToProvider[mode];
   // Only apply platform filter when in ads mode
   const platform = mode === "ads" ? platformParam : undefined;
-  const { data: leads, isLoading, isError, refetch } = useJourneys(100, 0, provider, platform, dateRange.startDate, dateRange.endDate);
+  const { data: leads, isLoading, isError, refetch } = useJourneys(1000, 0, provider, platform, dateRange.startDate, dateRange.endDate);
   const { data: journeyDetail, isLoading: detailLoading, isError: detailError } = useJourneyDetail(selectedLeadId || "");
 
-  const filteredLeads = leads || [];
+  // Extract unique campaigns for filter dropdown
+  const campaignOptions = useMemo(() => {
+    const campaigns = new Set<string>();
+    (leads || []).forEach(lead => {
+      if (lead.campaign_name) campaigns.add(lead.campaign_name);
+    });
+    return [
+      { value: "all", label: "Alle Kampagnen" },
+      ...Array.from(campaigns).sort().map(c => ({ value: c, label: c }))
+    ];
+  }, [leads]);
+
+  const filteredLeads = useMemo(() => {
+    return (leads || []).filter(lead => {
+      if (statusFilter !== "all" && lead.crm_status !== statusFilter) return false;
+      if (campaignFilter !== "all" && lead.campaign_name !== campaignFilter) return false;
+      return true;
+    });
+  }, [leads, statusFilter, campaignFilter]);
 
   const modeLabels: Record<string, string> = {
     all: "Alle",
@@ -83,7 +128,37 @@ export default function JourneysPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Lead-Verlauf - {modeLabel}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Lead-Verlauf - {modeLabel}</h1>
+        <div className="flex items-center gap-2">
+          {mode === "ads" && (
+            <Select value={campaignFilter} onValueChange={setCampaignFilter}>
+              <SelectTrigger className="w-64 bg-white">
+                <SelectValue placeholder="Kampagne filtern" />
+              </SelectTrigger>
+              <SelectContent className="bg-white max-h-60">
+                {campaignOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    <span className="truncate">{option.label}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-48 bg-white">
+              <SelectValue placeholder="Status filtern" />
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              {statusOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       <div className="rounded-xl border border-gray-200/50 bg-white/70 backdrop-blur-sm shadow-sm overflow-hidden">
         {isLoading ? (

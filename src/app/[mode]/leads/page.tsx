@@ -37,6 +37,8 @@ const statusColors: Record<string, string> = {
   new: "bg-blue-100 text-blue-800",
   contacted: "bg-yellow-100 text-yellow-800",
   qualified: "bg-purple-100 text-purple-800",
+  booked: "bg-indigo-100 text-indigo-800",
+  cancelled_booking: "bg-orange-100 text-orange-800",
   won: "bg-green-100 text-green-800",
   lost: "bg-red-100 text-red-800",
   synced: "bg-cyan-100 text-cyan-800",
@@ -46,6 +48,8 @@ const statusLabels: Record<string, string> = {
   new: "Neu",
   contacted: "Kontaktiert",
   qualified: "Qualifiziert",
+  booked: "Termin gebucht",
+  cancelled_booking: "Termin storniert",
   won: "Gewonnen",
   lost: "Verloren",
   synced: "Synchronisiert",
@@ -75,6 +79,8 @@ const statusOptions = [
   { value: "new", label: "Neu" },
   { value: "contacted", label: "Kontaktiert" },
   { value: "qualified", label: "Qualifiziert" },
+  { value: "booked", label: "Termin gebucht" },
+  { value: "cancelled_booking", label: "Termin storniert" },
   { value: "won", label: "Gewonnen" },
   { value: "lost", label: "Verloren" },
   { value: "synced", label: "Synchronisiert" },
@@ -89,7 +95,7 @@ export default function LeadsPage() {
 
   const { dateRange } = useDateRange();
   // Fetch all leads without provider filter
-  const { data: leads, isLoading, isError, refetch } = useJourneys(250, 0, undefined, undefined, dateRange.startDate, dateRange.endDate);
+  const { data: leads, isLoading, isError, refetch } = useJourneys(1000, 0, undefined, undefined, dateRange.startDate, dateRange.endDate);
   const { data: journeyDetail, isLoading: detailLoading, isError: detailError } = useJourneyDetail(selectedLeadId || "");
 
   // Filter leads based on selected filters
