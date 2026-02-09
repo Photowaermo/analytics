@@ -4,6 +4,7 @@ import { Users, ShoppingCart, DollarSign, TrendingUp, Target, Percent, AlertTria
 import { useDateRange } from "@/lib/date-context";
 import { useMode, modeConfig, getAdProviders } from "@/lib/mode-context";
 import { usePlatform } from "@/lib/platform-context";
+import { useProduct, getProductParam } from "@/lib/product-context";
 import { useOverview, useAttribution, useProviders, useJourneys, useSettings } from "@/lib/queries";
 import { KpiCard, KpiCardSkeleton } from "@/components/ui/kpi-card";
 import { TrendChart, TrendChartSkeleton } from "@/components/charts/trend-chart";
@@ -31,6 +32,7 @@ export default function OverviewPage() {
   const { dateRange } = useDateRange();
   const { mode } = useMode();
   const { platformParam } = usePlatform();
+  const { product } = useProduct();
   const { data: settings } = useSettings();
 
   // Get provider for current mode
@@ -39,6 +41,9 @@ export default function OverviewPage() {
   // Only apply platform filter when in ads mode
   const platform = mode === "ads" ? platformParam : undefined;
 
+  // Get product param for API (null for "all")
+  const productParam = getProductParam(product) || undefined;
+
   // Get dynamic ad providers based on active platforms in settings
   const adProviders = getAdProviders(settings?.active_ad_platforms);
 
@@ -46,7 +51,8 @@ export default function OverviewPage() {
     dateRange.startDate,
     dateRange.endDate,
     provider,
-    platform
+    platform,
+    productParam
   );
   const { data: attribution, isLoading: attributionLoading, isError: attributionError, refetch: refetchAttribution } = useAttribution(
     dateRange.startDate,
@@ -59,11 +65,12 @@ export default function OverviewPage() {
   const { data: providers, isLoading: providersLoading } = useProviders(
     dateRange.startDate,
     dateRange.endDate,
-    platform
+    platform,
+    productParam
   );
 
   // Fetch leads for ads mode submission type breakdown
-  const { data: adsLeads, isLoading: adsLeadsLoading } = useJourneys(1000, 0, "ads", platform, dateRange.startDate, dateRange.endDate);
+  const { data: adsLeads, isLoading: adsLeadsLoading } = useJourneys(1000, 0, "ads", platform, dateRange.startDate, dateRange.endDate, productParam);
 
   // Filter providers by mode (use dynamic adProviders for ads mode)
   const modeProvidersList = mode === "ads" ? adProviders : modeConfig[mode].providers;
@@ -578,13 +585,12 @@ export default function OverviewPage() {
                       <TableCell className="text-right">{formatCurrency(provider.cost)}</TableCell>
                       <TableCell className="text-right">{formatCurrency(provider.cpl)}</TableCell>
                       <TableCell className="text-right">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                          qualityScore === "gut"
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${qualityScore === "gut"
                             ? "bg-green-100 text-green-800"
                             : qualityScore === "mittel"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
-                        }`}>
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-red-100 text-red-800"
+                          }`}>
                           {qualityScore === "gut" && <CheckCircle className="h-3 w-3" />}
                           {qualityScore === "mittel" && <AlertTriangle className="h-3 w-3" />}
                           {qualityScore === "niedrig" && <XCircle className="h-3 w-3" />}

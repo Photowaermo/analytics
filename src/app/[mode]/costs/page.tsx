@@ -4,6 +4,7 @@ import { DollarSign, TrendingUp, PiggyBank, Percent, Target } from "lucide-react
 import { useDateRange } from "@/lib/date-context";
 import { useMode, modeConfig, getAdProviders } from "@/lib/mode-context";
 import { usePlatform } from "@/lib/platform-context";
+import { useProduct, getProductParam } from "@/lib/product-context";
 import { useOverview, useProviders, useSettings } from "@/lib/queries";
 import { KpiCard, KpiCardSkeleton } from "@/components/ui/kpi-card";
 import { BarChartCard, BarChartSkeleton } from "@/components/charts/bar-chart";
@@ -21,6 +22,7 @@ export default function CostsPage() {
   const { dateRange } = useDateRange();
   const { mode } = useMode();
   const { platformParam } = usePlatform();
+  const { product } = useProduct();
   const { data: settings } = useSettings();
 
   // Get provider for current mode
@@ -29,6 +31,8 @@ export default function CostsPage() {
   // Only apply platform filter when in ads mode
   const platform = mode === "ads" ? platformParam : undefined;
 
+  const productParam = getProductParam(product) || undefined;
+
   // Get dynamic ad providers based on active platforms in settings
   const adProviders = getAdProviders(settings?.active_ad_platforms);
 
@@ -36,12 +40,14 @@ export default function CostsPage() {
     dateRange.startDate,
     dateRange.endDate,
     provider,
-    platform
+    platform,
+    productParam
   );
   const { data: providers, isLoading: providersLoading } = useProviders(
     dateRange.startDate,
     dateRange.endDate,
-    platform
+    platform,
+    productParam
   );
 
   const isLoading = overviewLoading || providersLoading;

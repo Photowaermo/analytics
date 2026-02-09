@@ -5,8 +5,8 @@ services:
     build: .
     container_name: analytics-ui
     restart: unless-stopped
-    environment:
-      - NEXT_PUBLIC_API_URL=https://leads.photowaermo.de/analytics
+    env_file:
+      - .env
     networks:
       - gateway_net
 

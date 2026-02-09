@@ -1,9 +1,10 @@
 "use client";
 
-import { Megaphone, ShoppingCart, Globe, Layers, Check, ChevronDown } from "lucide-react";
+import { Megaphone, ShoppingCart, Globe, Layers, Check, ChevronDown, Package } from "lucide-react";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { useMode, modeConfig, AnalyticsMode } from "@/lib/mode-context";
 import { usePlatform, platformConfig, ALL_PLATFORMS } from "@/lib/platform-context";
+import { useProduct, productConfig, ProductFilter } from "@/lib/product-context";
 import {
   Select,
   SelectContent,
@@ -28,6 +29,7 @@ const modeIcons: Record<AnalyticsMode, typeof Megaphone> = {
 export function Header() {
   const { mode, setMode } = useMode();
   const { selectedPlatforms, togglePlatform, selectAll } = usePlatform();
+  const { product, setProduct } = useProduct();
   const Icon = modeIcons[mode];
 
   // Check if all platforms are selected
@@ -47,7 +49,7 @@ export function Header() {
       {/* Spacer for mobile menu button */}
       <div className="w-10 lg:w-0" />
 
-      {/* Mode Selector + Platform Filter */}
+      {/* Mode Selector + Platform Filter + Product Filter */}
       <div className="flex items-center gap-3">
         <Select value={mode} onValueChange={(v) => setMode(v as AnalyticsMode)}>
           <SelectTrigger className="w-[240px] h-11 bg-white border-gray-300 shadow-sm">
@@ -154,9 +156,37 @@ export function Header() {
             </PopoverContent>
           </Popover>
         )}
+
+        {/* Product Filter - always visible */}
+        <Select value={product} onValueChange={(v) => setProduct(v as ProductFilter)}>
+          <SelectTrigger className="w-[200px] h-11 bg-white border-gray-300 shadow-sm">
+            <div className="flex items-center gap-2">
+              <Package className="h-4 w-4 text-primary shrink-0" />
+              <span className="font-medium">{productConfig[product].label}</span>
+            </div>
+          </SelectTrigger>
+          <SelectContent className="bg-white">
+            <SelectItem value="all" className="py-2">
+              <div className="font-medium">{productConfig.all.label}</div>
+            </SelectItem>
+            <SelectItem value="pv" className="py-2">
+              <div className="font-medium">{productConfig.pv.label}</div>
+            </SelectItem>
+            <SelectItem value="heatpump" className="py-2">
+              <div className="font-medium">{productConfig.heatpump.label}</div>
+            </SelectItem>
+            <SelectItem value="kombi" className="py-2">
+              <div className="font-medium">{productConfig.kombi.label}</div>
+            </SelectItem>
+            <SelectItem value="unknown" className="py-2">
+              <div className="font-medium">{productConfig.unknown.label}</div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <DateRangePicker />
     </header>
   );
 }
+

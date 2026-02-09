@@ -17,16 +17,16 @@ import {
 
 // Query Keys
 export const queryKeys = {
-  overview: (startDate: string, endDate: string, provider?: string, platform?: string) =>
-    ["overview", startDate, endDate, provider, platform] as const,
-  funnel: (startDate: string, endDate: string, provider?: string, platform?: string) =>
-    ["funnel", startDate, endDate, provider, platform] as const,
-  attribution: (startDate: string, endDate: string, level: string, campaign?: string, adset?: string, platform?: string) =>
-    ["attribution", startDate, endDate, level, campaign, adset, platform] as const,
-  providers: (startDate: string, endDate: string, platform?: string) =>
-    ["providers", startDate, endDate, platform] as const,
-  journeys: (limit: number, offset: number, provider?: string, platform?: string, startDate?: string, endDate?: string) =>
-    ["journeys", limit, offset, provider, platform, startDate, endDate] as const,
+  overview: (startDate: string, endDate: string, provider?: string, platform?: string, product?: string) =>
+    ["overview", startDate, endDate, provider, platform, product] as const,
+  funnel: (startDate: string, endDate: string, provider?: string, platform?: string, product?: string) =>
+    ["funnel", startDate, endDate, provider, platform, product] as const,
+  attribution: (startDate: string, endDate: string, level: string, campaign?: string, adset?: string, platform?: string, product?: string) =>
+    ["attribution", startDate, endDate, level, campaign, adset, platform, product] as const,
+  providers: (startDate: string, endDate: string, platform?: string, product?: string) =>
+    ["providers", startDate, endDate, platform, product] as const,
+  journeys: (limit: number, offset: number, provider?: string, platform?: string, startDate?: string, endDate?: string, product?: string) =>
+    ["journeys", limit, offset, provider, platform, startDate, endDate, product] as const,
   journeyDetail: (id: string) => ["journey", id] as const,
   settings: ["settings"] as const,
   health: ["health"] as const,
@@ -34,17 +34,17 @@ export const queryKeys = {
 };
 
 // Hooks
-export function useOverview(startDate: string, endDate: string, provider?: string, platform?: string) {
+export function useOverview(startDate: string, endDate: string, provider?: string, platform?: string, product?: string) {
   return useQuery({
-    queryKey: queryKeys.overview(startDate, endDate, provider, platform),
-    queryFn: () => getOverview(startDate, endDate, provider, platform),
+    queryKey: queryKeys.overview(startDate, endDate, provider, platform, product),
+    queryFn: () => getOverview(startDate, endDate, provider, platform, product),
   });
 }
 
-export function useFunnel(startDate: string, endDate: string, provider?: string, platform?: string) {
+export function useFunnel(startDate: string, endDate: string, provider?: string, platform?: string, product?: string) {
   return useQuery({
-    queryKey: queryKeys.funnel(startDate, endDate, provider, platform),
-    queryFn: () => getFunnel(startDate, endDate, provider, platform),
+    queryKey: queryKeys.funnel(startDate, endDate, provider, platform, product),
+    queryFn: () => getFunnel(startDate, endDate, provider, platform, product),
   });
 }
 
@@ -54,25 +54,26 @@ export function useAttribution(
   level: "campaign" | "adset" | "ad",
   campaign?: string,
   adset?: string,
-  platform?: string
+  platform?: string,
+  product?: string
 ) {
   return useQuery({
-    queryKey: queryKeys.attribution(startDate, endDate, level, campaign, adset, platform),
-    queryFn: () => getAttribution(startDate, endDate, level, campaign, adset, platform),
+    queryKey: queryKeys.attribution(startDate, endDate, level, campaign, adset, platform, product),
+    queryFn: () => getAttribution(startDate, endDate, level, campaign, adset, platform, product),
   });
 }
 
-export function useProviders(startDate: string, endDate: string, platform?: string) {
+export function useProviders(startDate: string, endDate: string, platform?: string, product?: string) {
   return useQuery({
-    queryKey: queryKeys.providers(startDate, endDate, platform),
-    queryFn: () => getProviders(startDate, endDate, platform),
+    queryKey: queryKeys.providers(startDate, endDate, platform, product),
+    queryFn: () => getProviders(startDate, endDate, platform, product),
   });
 }
 
-export function useJourneys(limit = 50, offset = 0, provider?: string, platform?: string, startDate?: string, endDate?: string) {
+export function useJourneys(limit = 50, offset = 0, provider?: string, platform?: string, startDate?: string, endDate?: string, product?: string) {
   return useQuery({
-    queryKey: queryKeys.journeys(limit, offset, provider, platform, startDate, endDate),
-    queryFn: () => getJourneys(limit, offset, provider, platform, startDate, endDate),
+    queryKey: queryKeys.journeys(limit, offset, provider, platform, startDate, endDate, product),
+    queryFn: () => getJourneys(limit, offset, provider, platform, startDate, endDate, product),
   });
 }
 

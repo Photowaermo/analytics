@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Trophy, ChevronRight, ChevronDown, ArrowLeft, X } from "lucide-react";
 import { useMode } from "@/lib/mode-context";
+import { useProduct, getProductParam } from "@/lib/product-context";
 import { useDateRange } from "@/lib/date-context";
 import { usePlatform } from "@/lib/platform-context";
 import { useAttribution } from "@/lib/queries";
@@ -84,9 +85,12 @@ export default function AttributionPage() {
 
   const { dateRange } = useDateRange();
   const { platformParam } = usePlatform();
+  const { product } = useProduct();
 
   // Only apply platform filter when in ads mode
   const platform = mode === "ads" ? platformParam : undefined;
+
+  const productParam = getProductParam(product) || undefined;
 
   // Initialize state from URL params on mount
   useEffect(() => {
@@ -114,7 +118,8 @@ export default function AttributionPage() {
     currentLevel,
     selectedCampaign || undefined,
     selectedAdset || undefined,
-    platform
+    platform,
+    productParam
   );
 
   // Fetch ALL items for current level globally (for Top comparison panel)
@@ -124,7 +129,8 @@ export default function AttributionPage() {
     currentLevel,
     undefined,
     undefined,
-    platform
+    platform,
+    productParam
   );
 
   // Sort and filter top items based on selected metric
@@ -242,11 +248,10 @@ export default function AttributionPage() {
             <button
               onClick={() => handleBreadcrumbClick(index)}
               disabled={index === breadcrumbs.length - 1}
-              className={`${
-                index === breadcrumbs.length - 1
+              className={`${index === breadcrumbs.length - 1
                   ? "text-gray-900 font-medium cursor-default"
                   : "text-blue-600 hover:text-blue-800 hover:underline"
-              }`}
+                }`}
             >
               {crumb.name}
             </button>
@@ -381,8 +386,8 @@ export default function AttributionPage() {
                             item.roas >= 3
                               ? "text-green-600 font-semibold"
                               : item.roas >= 1
-                              ? "text-yellow-600"
-                              : "text-red-600"
+                                ? "text-yellow-600"
+                                : "text-red-600"
                           }
                         >
                           {item.roas.toFixed(2)}x
@@ -505,8 +510,8 @@ export default function AttributionPage() {
                             item.roas >= 3
                               ? "text-green-600 font-semibold"
                               : item.roas >= 1
-                              ? "text-yellow-600"
-                              : "text-red-600"
+                                ? "text-yellow-600"
+                                : "text-red-600"
                           }
                         >
                           {item.roas.toFixed(2)}x

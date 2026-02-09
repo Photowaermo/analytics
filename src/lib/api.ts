@@ -128,21 +128,23 @@ async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> 
 }
 
 // API Functions
-export async function getOverview(startDate: string, endDate: string, provider?: string, platform?: string): Promise<OverviewStats> {
+export async function getOverview(startDate: string, endDate: string, provider?: string, platform?: string, product?: string): Promise<OverviewStats> {
   const params = new URLSearchParams({ start_date: startDate, end_date: endDate });
   if (provider) {
     params.append("provider", provider);
   }
   appendPlatformParams(params, platform);
+  if (product) params.append("product", product);
   return fetchAPI(`/overview?${params.toString()}`);
 }
 
-export async function getFunnel(startDate: string, endDate: string, provider?: string, platform?: string): Promise<FunnelStep[]> {
+export async function getFunnel(startDate: string, endDate: string, provider?: string, platform?: string, product?: string): Promise<FunnelStep[]> {
   const params = new URLSearchParams({ start_date: startDate, end_date: endDate });
   if (provider) {
     params.append("provider", provider);
   }
   appendPlatformParams(params, platform);
+  if (product) params.append("product", product);
   return fetchAPI(`/funnel?${params.toString()}`);
 }
 
@@ -152,7 +154,8 @@ export async function getAttribution(
   level: "campaign" | "adset" | "ad",
   campaign?: string,
   adset?: string,
-  platform?: string
+  platform?: string,
+  product?: string
 ): Promise<Attribution[]> {
   const params = new URLSearchParams({
     start_date: startDate,
@@ -166,21 +169,24 @@ export async function getAttribution(
     params.append("adset", adset);
   }
   appendPlatformParams(params, platform);
+  if (product) params.append("product", product);
   return fetchAPI(`/attribution?${params.toString()}`);
 }
 
-export async function getProviders(startDate: string, endDate: string, platform?: string): Promise<Provider[]> {
+export async function getProviders(startDate: string, endDate: string, platform?: string, product?: string): Promise<Provider[]> {
   const params = new URLSearchParams({ start_date: startDate, end_date: endDate });
   appendPlatformParams(params, platform);
+  if (product) params.append("product", product);
   return fetchAPI(`/providers?${params.toString()}`);
 }
 
-export async function getJourneys(limit = 50, offset = 0, provider?: string, platform?: string, startDate?: string, endDate?: string): Promise<Lead[]> {
+export async function getJourneys(limit = 50, offset = 0, provider?: string, platform?: string, startDate?: string, endDate?: string, product?: string): Promise<Lead[]> {
   const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
   if (provider) params.append("provider", provider);
   if (startDate) params.append("start_date", startDate);
   if (endDate) params.append("end_date", endDate);
   appendPlatformParams(params, platform);
+  if (product) params.append("product", product);
   return fetchAPI(`/journeys/?${params.toString()}`);
 }
 

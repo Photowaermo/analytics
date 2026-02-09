@@ -65,6 +65,7 @@ const sourceOptions = [
   { value: "wattfox", label: "Wattfox" },
   { value: "eza", label: "EZA" },
   { value: "interleads", label: "Interleads" },
+  { value: "offline", label: "Offline" },
 ];
 
 const formOptions = [
@@ -105,8 +106,8 @@ export default function LeadsPage() {
       if (emailFilter && !lead.email.toLowerCase().includes(emailFilter.toLowerCase())) {
         return false;
       }
-      // Source filter
-      if (sourceFilter !== "all" && lead.source_name !== sourceFilter) {
+      // Source filter (case-insensitive)
+      if (sourceFilter !== "all" && lead.source_name?.toLowerCase() !== sourceFilter.toLowerCase()) {
         return false;
       }
       // Form type filter

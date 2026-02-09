@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useJourneys, useJourneyDetail } from "@/lib/queries";
 import { useMode } from "@/lib/mode-context";
 import { usePlatform } from "@/lib/platform-context";
+import { useProduct, getProductParam } from "@/lib/product-context";
 import { useDateRange } from "@/lib/date-context";
 import {
   Table,
@@ -54,6 +55,8 @@ const statusLabels: Record<string, string> = {
   won: "Gewonnen",
   lost: "Verloren",
   synced: "Synchronisiert",
+  // Fallback for English status if needed
+  "sync_failed": "Sync Fehler",
 };
 
 const statusOptions = [
@@ -82,11 +85,16 @@ export default function JourneysPage() {
   const [campaignFilter, setCampaignFilter] = useState("all");
   const { mode } = useMode();
   const { platformParam } = usePlatform();
+  const { product } = useProduct();
   const { dateRange } = useDateRange();
+
   const provider = modeToProvider[mode];
   // Only apply platform filter when in ads mode
   const platform = mode === "ads" ? platformParam : undefined;
-  const { data: leads, isLoading, isError, refetch } = useJourneys(1000, 0, provider, platform, dateRange.startDate, dateRange.endDate);
+
+  const productParam = getProductParam(product) || undefined;
+
+  const { data: leads, isLoading, isError, refetch } = useJourneys(1000, 0, provider, platform, dateRange.startDate, dateRange.endDate, productParam);
   const { data: journeyDetail, isLoading: detailLoading, isError: detailError } = useJourneyDetail(selectedLeadId || "");
 
   // Extract unique campaigns for filter dropdown
@@ -190,8 +198,8 @@ export default function JourneysPage() {
                   <TableCell>
                     <Badge variant="outline" className="font-normal">
                       {lead.submission_type === "lead_form" ? "Lead-Formular" :
-                       lead.submission_type === "website" ? "Website" :
-                       lead.submission_type === "api" ? "API" : lead.submission_type}
+                        lead.submission_type === "website" ? "Website" :
+                          lead.submission_type === "api" ? "API" : lead.submission_type}
                     </Badge>
                   </TableCell>
                   {mode === "ads" && (
@@ -310,13 +318,12 @@ export default function JourneysPage() {
                     {journeyDetail.timeline.map((event, index) => (
                       <div key={index} className="relative flex items-start gap-4 pl-10">
                         <div
-                          className={`absolute left-2.5 w-3 h-3 rounded-full border-2 border-white ${
-                            event.type === "sale_won"
+                          className={`absolute left-2.5 w-3 h-3 rounded-full border-2 border-white ${event.type === "sale_won"
                               ? "bg-green-500"
                               : event.type === "lead_submission"
-                              ? "bg-blue-500"
-                              : "bg-gray-400"
-                          }`}
+                                ? "bg-blue-500"
+                                : "bg-gray-400"
+                            }`}
                         />
                         <div className="flex-1 rounded-lg bg-white border border-gray-200 p-3">
                           <div className="flex items-center justify-between">
