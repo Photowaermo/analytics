@@ -51,6 +51,7 @@ export default function SettingsPage() {
     setHasChanges(true);
   };
 
+
   const handleSave = async () => {
     const numericPrices: Record<string, number> = {};
     Object.entries(prices).forEach(([key, value]) => {

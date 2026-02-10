@@ -83,6 +83,15 @@ export interface LeadJourney {
 export interface Settings {
   provider_prices: Record<string, number>;
   active_ad_platforms?: Record<string, boolean>;
+  ampel_config?: {
+    target_cpl: number;
+    yellow_multiplier: number;
+    min_leads_ad: number;
+    min_leads_adset: number;
+    ad_spend_threshold: number;
+    adset_spend_threshold: number;
+    kill_threshold_spend: number;
+  };
 }
 
 export interface HealthStatus {
@@ -192,6 +201,11 @@ export async function getJourneys(limit = 50, offset = 0, provider?: string, pla
 
 export async function getJourneyDetail(leadId: string): Promise<LeadJourney> {
   return fetchAPI(`/journeys/${leadId}`);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function getLeadRaw(leadId: string): Promise<Record<string, any>> {
+  return fetchAPI(`/lead/${leadId}/raw`);
 }
 
 export async function getSettings(): Promise<Settings> {

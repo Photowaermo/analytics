@@ -1,14 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Trophy, ChevronRight, ChevronDown, ArrowLeft, X } from "lucide-react";
+import { Trophy, ChevronRight, ChevronDown, ArrowLeft, X, AlertTriangle, Info, Save, Loader2, Settings } from "lucide-react";
 import { useMode } from "@/lib/mode-context";
 import { useProduct, getProductParam } from "@/lib/product-context";
 import { useDateRange } from "@/lib/date-context";
 import { usePlatform } from "@/lib/platform-context";
-import { useAttribution } from "@/lib/queries";
+import { useAttribution, useSettings, useUpdateSettings } from "@/lib/queries";
+import { Input } from "@/components/ui/input";
+import {
+  evaluateAmpel,
+  getQuickToggleDates,
+  DEFAULT_AMPEL_CONFIG,
+  type AmpelConfig,
+  type AmpelResult,
+  type QuickToggle,
+} from "@/lib/ampel";
+import { AmpelDot } from "@/components/ui/ampel-dot";
 import {
   Table,
   TableBody,
@@ -31,8 +41,9 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { ErrorCard } from "@/components/ui/error-card";
-import { formatCurrency, formatNumber, translateToGerman } from "@/lib/utils";
+import { cn, formatCurrency, formatNumber, translateToGerman } from "@/lib/utils";
 
 type Level = "campaign" | "adset" | "ad";
 
@@ -83,9 +94,69 @@ export default function AttributionPage() {
   const [topAdsCount, setTopAdsCount] = useState<TopCount>(3);
   const [topAdsSortBy, setTopAdsSortBy] = useState<SortBy>("leads");
 
+  // Quick Toggle for attribution-specific date range
+  const [quickToggle, setQuickToggle] = useState<QuickToggle>("global");
+
   const { dateRange } = useDateRange();
   const { platformParam } = usePlatform();
   const { product } = useProduct();
+
+  // Ampel config from settings
+  const { data: settingsData } = useSettings();
+  const updateSettings = useUpdateSettings();
+  const [showAmpelSettings, setShowAmpelSettings] = useState(false);
+  const [editAmpelConfig, setEditAmpelConfig] = useState<Record<string, string>>({});
+
+  const ampelConfig: AmpelConfig = useMemo(() => {
+    if (!settingsData?.ampel_config) return DEFAULT_AMPEL_CONFIG;
+    const cfg = settingsData.ampel_config;
+    return {
+      targetCpl: cfg.target_cpl,
+      yellowMultiplier: cfg.yellow_multiplier,
+      minLeadsAd: cfg.min_leads_ad,
+      minLeadsAdset: cfg.min_leads_adset,
+      adSpendThreshold: cfg.ad_spend_threshold,
+      adsetSpendThreshold: cfg.adset_spend_threshold,
+      killThresholdSpend: cfg.kill_threshold_spend,
+    };
+  }, [settingsData]);
+
+  // Sync edit form with current config
+  useEffect(() => {
+    setEditAmpelConfig({
+      target_cpl: String(ampelConfig.targetCpl),
+      yellow_multiplier: String(ampelConfig.yellowMultiplier),
+      min_leads_ad: String(ampelConfig.minLeadsAd),
+      min_leads_adset: String(ampelConfig.minLeadsAdset),
+      ad_spend_threshold: String(ampelConfig.adSpendThreshold),
+      adset_spend_threshold: String(ampelConfig.adsetSpendThreshold),
+      kill_threshold_spend: String(ampelConfig.killThresholdSpend),
+    });
+  }, [ampelConfig]);
+
+  const handleAmpelConfigChange = (key: string, value: string) => {
+    setEditAmpelConfig((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveAmpelConfig = async () => {
+    await updateSettings.mutateAsync({
+      provider_prices: settingsData?.provider_prices || {},
+      active_ad_platforms: settingsData?.active_ad_platforms,
+      ampel_config: {
+        target_cpl: parseFloat(editAmpelConfig.target_cpl) || 30,
+        yellow_multiplier: parseFloat(editAmpelConfig.yellow_multiplier) || 1.2,
+        min_leads_ad: parseFloat(editAmpelConfig.min_leads_ad) || 3,
+        min_leads_adset: parseFloat(editAmpelConfig.min_leads_adset) || 5,
+        ad_spend_threshold: parseFloat(editAmpelConfig.ad_spend_threshold) || 60,
+        adset_spend_threshold: parseFloat(editAmpelConfig.adset_spend_threshold) || 150,
+        kill_threshold_spend: parseFloat(editAmpelConfig.kill_threshold_spend) || 90,
+      },
+    });
+    setShowAmpelSettings(false);
+  };
+
+  // Effective date range (quick toggle overrides global)
+  const effectiveDateRange = getQuickToggleDates(quickToggle, dateRange);
 
   // Only apply platform filter when in ads mode
   const platform = mode === "ads" ? platformParam : undefined;
@@ -113,8 +184,8 @@ export default function AttributionPage() {
   const currentLevel: Level = selectedAdset ? "ad" : selectedCampaign ? "adset" : "campaign";
 
   const { data: attribution, isLoading, isError, refetch } = useAttribution(
-    dateRange.startDate,
-    dateRange.endDate,
+    effectiveDateRange.startDate,
+    effectiveDateRange.endDate,
     currentLevel,
     selectedCampaign || undefined,
     selectedAdset || undefined,
@@ -124,8 +195,8 @@ export default function AttributionPage() {
 
   // Fetch ALL items for current level globally (for Top comparison panel)
   const { data: allItemsForLevel, isLoading: allItemsLoading } = useAttribution(
-    dateRange.startDate,
-    dateRange.endDate,
+    effectiveDateRange.startDate,
+    effectiveDateRange.endDate,
     currentLevel,
     undefined,
     undefined,
@@ -165,8 +236,17 @@ export default function AttributionPage() {
   const currentLevelLabels = levelLabels[currentLevel];
 
   // Data comes pre-sorted by date (newest first) from backend
-  const sortedData = attribution || [];
+  const sortedData = useMemo(() => attribution || [], [attribution]);
   const topRoas = sortedData.filter(item => item.roas > 0).sort((a, b) => b.roas - a.roas)[0]?.roas || 0;
+
+  // Compute Ampel results for each row
+  const ampelResults = useMemo(() => {
+    const map = new Map<string, AmpelResult>();
+    for (const item of sortedData) {
+      map.set(item.name, evaluateAmpel(item, currentLevel, ampelConfig));
+    }
+    return map;
+  }, [sortedData, currentLevel, ampelConfig]);
 
   // Build breadcrumb items
   const breadcrumbs: BreadcrumbItem[] = [
@@ -259,6 +339,147 @@ export default function AttributionPage() {
         ))}
       </div>
 
+      {/* Quick Toggle + Ampel Legend */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500 mr-1">Zeitraum:</span>
+          {(["global", "3d", "7d"] as QuickToggle[]).map((toggle) => (
+            <Button
+              key={toggle}
+              variant={quickToggle === toggle ? "default" : "outline"}
+              size="sm"
+              onClick={() => setQuickToggle(toggle)}
+            >
+              {toggle === "global" ? "Global" : toggle}
+            </Button>
+          ))}
+          {quickToggle !== "global" && (
+            <span className="text-xs text-gray-400 ml-2">
+              {effectiveDateRange.startDate} – {effectiveDateRange.endDate}
+            </span>
+          )}
+        </div>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <Info className="h-4 w-4" />
+              Ampel-Legende
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-96 bg-white p-0">
+            {/* Legend */}
+            <div className="p-4">
+              <h4 className="font-semibold text-sm mb-3">Ampel-Bewertung</h4>
+              <div className="space-y-2">
+                <div className="flex items-start gap-2.5">
+                  <span className="h-3 w-3 rounded-full bg-green-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">Gut</p>
+                    <p className="text-xs text-gray-500">CPL ≤ {ampelConfig.targetCpl} € – Halten / skalieren</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="h-3 w-3 rounded-full bg-yellow-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">Warnung</p>
+                    <p className="text-xs text-gray-500">CPL {ampelConfig.targetCpl}–{(ampelConfig.targetCpl * ampelConfig.yellowMultiplier).toFixed(0)} € – Beobachten</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="h-3 w-3 rounded-full bg-red-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">Schlecht</p>
+                    <p className="text-xs text-gray-500">CPL &gt; {(ampelConfig.targetCpl * ampelConfig.yellowMultiplier).toFixed(0)} € – Reduzieren / stoppen</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="h-3 w-3 rounded-full bg-red-900 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">Stoppen</p>
+                    <p className="text-xs text-gray-500">0 Leads bei ≥ {ampelConfig.killThresholdSpend} € Ausgaben</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="h-3 w-3 rounded-full bg-blue-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">Lernphase</p>
+                    <p className="text-xs text-gray-500">Noch zu wenig Daten für Bewertung</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="h-3 w-3 rounded-full bg-gray-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">Pausiert</p>
+                    <p className="text-xs text-gray-500">Keine Aktion nötig</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5 border-t pt-2">
+                  <AlertTriangle className="h-3 w-3 text-orange-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">CPC-Warnung</p>
+                    <p className="text-xs text-gray-500">Klickpreis zu hoch für Ziel-CPL</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Settings toggle */}
+            <div className="border-t">
+              <button
+                onClick={() => setShowAmpelSettings(!showAmpelSettings)}
+                className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Settings className="h-3.5 w-3.5" />
+                  Schwellenwerte anpassen
+                </span>
+                <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showAmpelSettings && "rotate-180")} />
+              </button>
+
+              {showAmpelSettings && (
+                <div className="px-4 pb-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-gray-600">Ziel-CPL (€)</label>
+                      <Input type="number" step="1" min="1" className="h-8 text-sm mt-1" value={editAmpelConfig.target_cpl} onChange={(e) => handleAmpelConfigChange("target_cpl", e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-600">Gelb-Multiplikator</label>
+                      <Input type="number" step="0.05" min="1" className="h-8 text-sm mt-1" value={editAmpelConfig.yellow_multiplier} onChange={(e) => handleAmpelConfigChange("yellow_multiplier", e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-600">Min. Leads Ad</label>
+                      <Input type="number" step="1" min="1" className="h-8 text-sm mt-1" value={editAmpelConfig.min_leads_ad} onChange={(e) => handleAmpelConfigChange("min_leads_ad", e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-600">Min. Leads Adset</label>
+                      <Input type="number" step="1" min="1" className="h-8 text-sm mt-1" value={editAmpelConfig.min_leads_adset} onChange={(e) => handleAmpelConfigChange("min_leads_adset", e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-600">Spend-Schwelle Ad (€)</label>
+                      <Input type="number" step="5" min="0" className="h-8 text-sm mt-1" value={editAmpelConfig.ad_spend_threshold} onChange={(e) => handleAmpelConfigChange("ad_spend_threshold", e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-600">Spend-Schwelle Adset (€)</label>
+                      <Input type="number" step="5" min="0" className="h-8 text-sm mt-1" value={editAmpelConfig.adset_spend_threshold} onChange={(e) => handleAmpelConfigChange("adset_spend_threshold", e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-600">Kill-Schwelle (€)</label>
+                      <Input type="number" step="5" min="0" className="h-8 text-sm mt-1" value={editAmpelConfig.kill_threshold_spend} onChange={(e) => handleAmpelConfigChange("kill_threshold_spend", e.target.value)} />
+                    </div>
+                  </div>
+                  <Button size="sm" className="w-full" onClick={handleSaveAmpelConfig} disabled={updateSettings.isPending}>
+                    {updateSettings.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Save className="h-3.5 w-3.5 mr-1.5" />}
+                    Speichern
+                  </Button>
+                </div>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+
       {/* Top Comparison Panel - adapts to current level */}
       <div className="rounded-xl border border-gray-200/50 bg-white/70 backdrop-blur-sm shadow-sm overflow-hidden">
         {/* Header - always visible */}
@@ -325,6 +546,7 @@ export default function AttributionPage() {
                   <TableRow>
                     {currentLevel === "ad" && <TableHead className="w-16">Creative</TableHead>}
                     <TableHead>Name</TableHead>
+                    <TableHead className="w-20">Ampel</TableHead>
                     {currentLevel === "ad" && <TableHead>Kampagne</TableHead>}
                     {currentLevel === "ad" && <TableHead>Anzeigengruppe</TableHead>}
                     <TableHead className="text-right">Leads</TableHead>
@@ -366,6 +588,9 @@ export default function AttributionPage() {
                           )}
                           {translateToGerman(item.name)}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <AmpelDot result={evaluateAmpel(item, currentLevel, ampelConfig)} />
                       </TableCell>
                       {currentLevel === "ad" && (
                         <TableCell className="text-gray-600 text-sm">
@@ -421,6 +646,7 @@ export default function AttributionPage() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="w-20">Ampel</TableHead>
                   {currentLevel === "campaign" && <TableHead>Typ</TableHead>}
                   {currentLevel === "ad" && <TableHead>Creative</TableHead>}
                   <TableHead className="text-right">Impressionen</TableHead>
@@ -430,6 +656,7 @@ export default function AttributionPage() {
                   <TableHead className="text-right">Verkäufe</TableHead>
                   <TableHead className="text-right">CPL</TableHead>
                   <TableHead className="text-right">ROAS</TableHead>
+                  <TableHead>Empfehlung</TableHead>
                   {currentLevel !== "ad" && <TableHead className="w-10"></TableHead>}
                 </TableRow>
               </TableHeader>
@@ -442,7 +669,10 @@ export default function AttributionPage() {
                     <TableRow
                       key={item.name}
                       onClick={() => isClickable && handleRowClick(item)}
-                      className={isClickable ? "cursor-pointer hover:bg-gray-50" : ""}
+                      className={cn(
+                        isClickable ? "cursor-pointer hover:bg-gray-50" : "",
+                        ampelResults.get(item.name)?.status === "kill" ? "bg-red-50/50" : ""
+                      )}
                     >
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
@@ -463,6 +693,12 @@ export default function AttributionPage() {
                         ) : (
                           <span className="text-gray-400 text-sm">-</span>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const result = ampelResults.get(item.name);
+                          return result ? <AmpelDot result={result} showLabel /> : null;
+                        })()}
                       </TableCell>
                       {currentLevel === "campaign" && (
                         <TableCell>
@@ -517,6 +753,26 @@ export default function AttributionPage() {
                           {item.roas.toFixed(2)}x
                         </span>
                       </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const result = ampelResults.get(item.name);
+                          if (!result) return null;
+                          return (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-sm text-gray-700">{result.recommendation}</span>
+                              {result.budgetSuggestion && (
+                                <span className="text-xs text-gray-500">{result.budgetSuggestion}</span>
+                              )}
+                              {result.impossibleCpcWarning && (
+                                <span className="text-xs text-orange-600 flex items-center gap-1">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  CPC-Warnung
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </TableCell>
                       {currentLevel !== "ad" && (
                         <TableCell>
                           <ChevronRight className="h-4 w-4 text-gray-400" />
@@ -527,7 +783,7 @@ export default function AttributionPage() {
                 })}
                 {sortedData.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={currentLevel === "campaign" ? 12 : currentLevel === "ad" ? 10 : 11} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={currentLevel === "campaign" ? 14 : currentLevel === "ad" ? 12 : 13} className="text-center py-8 text-gray-500">
                       Keine Daten verfügbar
                     </TableCell>
                   </TableRow>

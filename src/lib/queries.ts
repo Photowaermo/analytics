@@ -8,6 +8,7 @@ import {
   getProviders,
   getJourneys,
   getJourneyDetail,
+  getLeadRaw,
   getSettings,
   updateSettings,
   getHealth,
@@ -28,6 +29,7 @@ export const queryKeys = {
   journeys: (limit: number, offset: number, provider?: string, platform?: string, startDate?: string, endDate?: string, product?: string) =>
     ["journeys", limit, offset, provider, platform, startDate, endDate, product] as const,
   journeyDetail: (id: string) => ["journey", id] as const,
+  leadRaw: (id: string) => ["leadRaw", id] as const,
   settings: ["settings"] as const,
   health: ["health"] as const,
   unmatched: (limit: number) => ["unmatched", limit] as const,
@@ -81,6 +83,14 @@ export function useJourneyDetail(id: string) {
   return useQuery({
     queryKey: queryKeys.journeyDetail(id),
     queryFn: () => getJourneyDetail(id),
+    enabled: !!id,
+  });
+}
+
+export function useLeadRaw(id: string) {
+  return useQuery({
+    queryKey: queryKeys.leadRaw(id),
+    queryFn: () => getLeadRaw(id),
     enabled: !!id,
   });
 }

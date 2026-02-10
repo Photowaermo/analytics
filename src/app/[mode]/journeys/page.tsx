@@ -5,7 +5,7 @@ import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { Eye } from "lucide-react";
 import Link from "next/link";
-import { useJourneys, useJourneyDetail } from "@/lib/queries";
+import { useJourneys, useJourneyDetail, useLeadRaw } from "@/lib/queries";
 import { useMode } from "@/lib/mode-context";
 import { usePlatform } from "@/lib/platform-context";
 import { useProduct, getProductParam } from "@/lib/product-context";
@@ -81,6 +81,7 @@ const modeToProvider: Record<string, string | undefined> = {
 
 export default function JourneysPage() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const [rawLeadId, setRawLeadId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [campaignFilter, setCampaignFilter] = useState("all");
   const { mode } = useMode();
@@ -96,6 +97,7 @@ export default function JourneysPage() {
 
   const { data: leads, isLoading, isError, refetch } = useJourneys(1000, 0, provider, platform, dateRange.startDate, dateRange.endDate, productParam);
   const { data: journeyDetail, isLoading: detailLoading, isError: detailError } = useJourneyDetail(selectedLeadId || "");
+  const { data: leadRawData, isLoading: rawLoading } = useLeadRaw(rawLeadId || "");
 
   // Extract unique campaigns for filter dropdown
   const campaignOptions = useMemo(() => {
@@ -192,7 +194,7 @@ export default function JourneysPage() {
             </TableHeader>
             <TableBody>
               {filteredLeads.map((lead) => (
-                <TableRow key={lead.id}>
+                <TableRow key={lead.id} className="cursor-pointer hover:bg-gray-50" onClick={() => setRawLeadId(lead.id)}>
                   <TableCell className="font-medium">{lead.email}</TableCell>
                   <TableCell className="capitalize">{lead.source_name}</TableCell>
                   <TableCell>
@@ -255,7 +257,7 @@ export default function JourneysPage() {
                   <TableCell>
                     {format(parseISO(lead.created_at), "d. MMM yyyy, HH:mm", { locale: de })}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -343,6 +345,24 @@ export default function JourneysPage() {
               </div>
             </div>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* Raw Data Dialog */}
+      <Dialog open={!!rawLeadId} onOpenChange={() => setRawLeadId(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white">
+          <DialogHeader>
+            <DialogTitle>Rohdaten</DialogTitle>
+          </DialogHeader>
+          {rawLoading ? (
+            <div className="py-8 text-center text-gray-500">Laden...</div>
+          ) : leadRawData ? (
+            <pre className="rounded-lg bg-gray-900 text-gray-100 p-4 text-xs overflow-auto max-h-[70vh] font-mono">
+              {JSON.stringify(leadRawData, null, 2)}
+            </pre>
+          ) : (
+            <div className="py-8 text-center text-gray-500">Keine Rohdaten verfügbar</div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
