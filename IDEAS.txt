@@ -1,0 +1,10 @@
+ 1. Ranking/Podium: Top 3 Seller als visuelle Podium-Karten über der Tabelle (Gold/Silber/Bronze)                                                                       
+  2. Zeitvergleich: "vs. Vormonat" Spalte mit Trend-Pfeilen (+/- Leads, Revenue, Conversion)                                                                             
+  3. Mini-Sparklines: Kleine Umsatz-/Leads-Charts pro Seller in der Zeile (letzte 30 Tage)                                                                               
+  4. Ziel-Tracking: Monatliche Targets pro Seller setzen, Fortschrittsbalken in der Tabelle                                                                            
+  5. Deal-Pipeline: In der Expand-Ansicht Leads nach Status gruppiert als Mini-Funnel anzeigen                                                                           
+  6. Export: CSV/Excel-Export Button für die Seller-Tabelle + Detail-Leads                                                                                               
+  7. Produkt-Mix Donut: Kleiner Donut-Chart pro Seller (PV/WP/Kombi Verteilung) statt nur Zahlen
+  8. Reaktionszeit: Durchschnittliche Zeit von Lead-Eingang bis Kontaktaufnahme pro Seller
+  9. Hitrate nach Quelle: Conversion Rate aufgeschlüsselt nach Lead-Quelle (Meta vs. Google vs. Organic)
+  10. Leaderboard-Animation: Wöchentlicher/monatlicher "Seller des Monats" Badge mit konfetti-artigem Highlight

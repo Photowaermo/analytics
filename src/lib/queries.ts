@@ -13,6 +13,8 @@ import {
   updateSettings,
   getHealth,
   getUnmatched,
+  getSellers,
+  getSellerLeads,
   type Settings,
 } from "./api";
 
@@ -33,6 +35,10 @@ export const queryKeys = {
   settings: ["settings"] as const,
   health: ["health"] as const,
   unmatched: (limit: number) => ["unmatched", limit] as const,
+  sellers: (startDate: string, endDate: string) =>
+    ["sellers", startDate, endDate] as const,
+  sellerLeads: (email: string, startDate: string, endDate: string) =>
+    ["sellerLeads", email, startDate, endDate] as const,
 };
 
 // Hooks
@@ -124,5 +130,20 @@ export function useUnmatched(limit = 100) {
   return useQuery({
     queryKey: queryKeys.unmatched(limit),
     queryFn: () => getUnmatched(limit),
+  });
+}
+
+export function useSellers(startDate: string, endDate: string) {
+  return useQuery({
+    queryKey: queryKeys.sellers(startDate, endDate),
+    queryFn: () => getSellers(startDate, endDate),
+  });
+}
+
+export function useSellerLeads(sellerEmail: string, startDate: string, endDate: string) {
+  return useQuery({
+    queryKey: queryKeys.sellerLeads(sellerEmail, startDate, endDate),
+    queryFn: () => getSellerLeads(sellerEmail, startDate, endDate),
+    enabled: !!sellerEmail,
   });
 }

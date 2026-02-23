@@ -228,3 +228,50 @@ export async function getUnmatched(limit = 100): Promise<UnmatchedEvent[]> {
   const params = new URLSearchParams({ limit: String(limit) });
   return fetchAPI(`/unmatched?${params.toString()}`);
 }
+
+// --- Seller ---
+
+export interface Seller {
+  name: string;
+  leads: number;
+  won: number;
+  won_pv: number;
+  won_wp: number;
+  won_kombi: number;
+  won_unknown: number;
+  revenue: number;
+  revenue_pv: number;
+  revenue_wp: number;
+  revenue_kombi: number;
+  revenue_unknown: number;
+  conversion_rate: number;
+  avg_deal_value: number;
+}
+
+export interface SellerLead {
+  id: string;
+  email: string;
+  source_name: string;
+  submission_type: string;
+  crm_status: string;
+  created_at: string;
+  sale_value: number;
+  campaign_name: string;
+  adset_name: string;
+  ad_name: string;
+  product: string;
+}
+
+export async function getSellers(startDate: string, endDate: string): Promise<Seller[]> {
+  const params = new URLSearchParams({ start_date: startDate, end_date: endDate });
+  return fetchAPI(`/sellers?${params.toString()}`);
+}
+
+export async function getSellerLeads(
+  sellerEmail: string,
+  startDate: string,
+  endDate: string
+): Promise<SellerLead[]> {
+  const params = new URLSearchParams({ start_date: startDate, end_date: endDate });
+  return fetchAPI(`/sellers/${encodeURIComponent(sellerEmail)}/leads?${params.toString()}`);
+}

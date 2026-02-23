@@ -5,17 +5,20 @@ import { DateProvider } from "@/lib/date-context";
 import { ModeProvider } from "@/lib/mode-context";
 import { PlatformProvider } from "@/lib/platform-context";
 import { ProductProvider } from "@/lib/product-context";
+import { ViewProvider } from "@/lib/view-context";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryProvider>
-      <DateProvider>
-        <ModeProvider>
-          <PlatformProvider>
-            <ProductProvider>{children}</ProductProvider>
-          </PlatformProvider>
-        </ModeProvider>
-      </DateProvider>
+      <ViewProvider>
+        <DateProvider>
+          <ModeProvider>
+            <PlatformProvider>
+              <ProductProvider>{children}</ProductProvider>
+            </PlatformProvider>
+          </ModeProvider>
+        </DateProvider>
+      </ViewProvider>
     </QueryProvider>
   );
 }

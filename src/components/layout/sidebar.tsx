@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMode, AnalyticsMode } from "@/lib/mode-context";
+import { useView } from "@/lib/view-context";
+import { ViewToggle } from "./view-toggle";
 
 // Navigation items per mode (relative paths within mode)
 const navItemsByMode: Record<AnalyticsMode, { path: string; label: string; icon: typeof LayoutDashboard }[]> = {
@@ -54,6 +56,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const { mode } = useMode();
+  const { view } = useView();
 
   const modeNavItems = navItemsByMode[mode];
 
@@ -93,44 +96,57 @@ export function Sidebar() {
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex h-16 items-center justify-between border-b border-gray-200 px-6">
-          <div className="flex items-center">
-            <Image src="/Logo.png" alt="Logo" width={32} height={32} className="h-8 w-auto" />
-            <span className="ml-3 text-lg font-semibold text-gray-900">Analytics</span>
+        <div className="flex flex-col border-b border-gray-200 px-4 py-3 gap-3 transition-colors duration-500">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Image src="/Logo.png" alt="Logo" width={32} height={32} className="h-8 w-auto" />
+              <span className="ml-3 text-lg font-semibold text-gray-900">
+                {view === "seller" ? "Seller" : "Analytics"}
+              </span>
+            </div>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="lg:hidden p-1 rounded hover:bg-gray-100"
+              aria-label="Menü schließen"
+            >
+              <X className="h-5 w-5 text-gray-500" />
+            </button>
           </div>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="lg:hidden p-1 rounded hover:bg-gray-100"
-            aria-label="Menü schließen"
-          >
-            <X className="h-5 w-5 text-gray-500" />
-          </button>
+          <ViewToggle />
         </div>
         <nav className="flex flex-col h-[calc(100vh-4rem)]">
           {/* Mode-specific navigation */}
-          <div className="space-y-1 p-4 flex-1">
-            {modeNavItems.map((item) => {
-              const href = getFullHref(item.path);
-              const isActive = isModeItemActive(item.path);
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.path}
-                  href={href}
-                  onClick={() => setIsOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                    isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                  )}
-                >
-                  <Icon className="h-5 w-5" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
+          {view === "analytics" ? (
+            <div className="space-y-1 p-4 flex-1">
+              {modeNavItems.map((item) => {
+                const href = getFullHref(item.path);
+                const isActive = isModeItemActive(item.path);
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.path}
+                    href={href}
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-4 flex-1">
+              <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                Verkäufer
+              </div>
+            </div>
+          )}
 
           {/* Shared navigation (bottom) */}
           <div className="border-t border-gray-200 p-4 space-y-1">

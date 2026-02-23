@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { ViewContainer } from "@/components/layout/view-container";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,7 +33,7 @@ export default function RootLayout({
             <Sidebar />
             <div className="flex-1 lg:ml-64">
               <Header />
-              <main className="p-4 lg:p-6">{children}</main>
+              <ViewContainer>{children}</ViewContainer>
             </div>
           </div>
         </Providers>

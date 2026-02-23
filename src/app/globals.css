@@ -9,4 +9,142 @@
 
 body {
   background-color: var(--color-surface);
+  transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Seller Dark Mode Transition ── */
+
+@keyframes seller-enter {
+  0% { opacity: 1; filter: brightness(1); }
+  30% { opacity: 0.92; filter: brightness(0.6) saturate(0.5); }
+  100% { opacity: 1; filter: brightness(1) saturate(1); }
+}
+
+@keyframes seller-exit {
+  0% { opacity: 1; filter: brightness(1); }
+  30% { opacity: 0.92; filter: brightness(1.3) saturate(0.5); }
+  100% { opacity: 1; filter: brightness(1) saturate(1); }
+}
+
+html[data-view="seller"] body {
+  background-color: #0f1117;
+  color: #e8eaf0;
+  animation: seller-enter 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+html:not([data-view="seller"]) body.was-seller {
+  animation: seller-exit 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Stagger children for a cascade reveal effect */
+html[data-view="seller"] main > div > * {
+  animation: seller-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+html[data-view="seller"] main > div > *:nth-child(1) { animation-delay: 0.1s; }
+html[data-view="seller"] main > div > *:nth-child(2) { animation-delay: 0.18s; }
+html[data-view="seller"] main > div > *:nth-child(3) { animation-delay: 0.26s; }
+html[data-view="seller"] main > div > *:nth-child(4) { animation-delay: 0.34s; }
+
+@keyframes seller-fade-up {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Dark surface overrides ── */
+
+html[data-view="seller"] .bg-surface {
+  background-color: #0f1117 !important;
+}
+
+html[data-view="seller"] .bg-white,
+html[data-view="seller"] .bg-white\/70 {
+  background-color: #1a1d27 !important;
+  color: #e8eaf0;
+  transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.5s ease;
+}
+
+html[data-view="seller"] .border-gray-200,
+html[data-view="seller"] .border-gray-200\/50,
+html[data-view="seller"] .border-gray-300 {
+  border-color: #2a2d3a !important;
+}
+
+html[data-view="seller"] .text-gray-900 {
+  color: #e8eaf0 !important;
+}
+
+html[data-view="seller"] .text-gray-600,
+html[data-view="seller"] .text-gray-500 {
+  color: #9ca3af !important;
+}
+
+html[data-view="seller"] .text-gray-400 {
+  color: #6b7280 !important;
+}
+
+html[data-view="seller"] .hover\:bg-gray-100:hover,
+html[data-view="seller"] .hover\:bg-gray-50:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html[data-view="seller"] .bg-gray-100,
+html[data-view="seller"] .bg-gray-50 {
+  background-color: #141720 !important;
+}
+
+html[data-view="seller"] .shadow-sm {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Sidebar dark mode */
+html[data-view="seller"] aside {
+  background-color: #0d0f15 !important;
+  border-color: #2a2d3a !important;
+  transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.5s ease;
+}
+
+/* Header dark mode */
+html[data-view="seller"] header {
+  background-color: #141720 !important;
+  border-color: #2a2d3a !important;
+  transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.5s ease;
+}
+
+/* Table dark mode */
+html[data-view="seller"] th {
+  color: #9ca3af !important;
+  border-color: #2a2d3a !important;
+}
+
+html[data-view="seller"] td {
+  border-color: #1f2230 !important;
+}
+
+html[data-view="seller"] tr:hover td {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Input dark mode */
+html[data-view="seller"] input {
+  background-color: #141720 !important;
+  border-color: #2a2d3a !important;
+  color: #e8eaf0 !important;
+}
+
+html[data-view="seller"] input::placeholder {
+  color: #6b7280 !important;
+}
+
+/* KPI card override for seller */
+html[data-view="seller"] .bg-primary\/10 {
+  background-color: rgba(99, 102, 241, 0.15) !important;
+}
+
+html[data-view="seller"] .text-primary {
+  color: #818cf8 !important;
 }
