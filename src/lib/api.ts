@@ -63,6 +63,7 @@ export interface Lead {
   campaign_name?: string;
   adset_name?: string;
   ad_name?: string;
+  product?: string;
 }
 
 export interface TimelineEvent {

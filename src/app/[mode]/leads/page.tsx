@@ -56,6 +56,13 @@ const statusLabels: Record<string, string> = {
   synced: "Synchronisiert",
 };
 
+const productLabels: Record<string, string> = {
+  pv: "PV",
+  heatpump: "Wärmepumpe",
+  kombi: "Kombi",
+  unknown: "Unbekannt",
+};
+
 const sourceOptions = [
   { value: "all", label: "Alle Quellen" },
   { value: "metaleads", label: "Meta" },
@@ -79,8 +86,6 @@ const formOptions = [
 const statusOptions = [
   { value: "all", label: "Alle Status" },
   { value: "new", label: "Neu" },
-  { value: "contacted", label: "Kontaktiert" },
-  { value: "qualified", label: "Qualifiziert" },
   { value: "booked", label: "Termin gebucht" },
   { value: "cancelled_booking", label: "Termin storniert" },
   { value: "won", label: "Gewonnen" },
@@ -205,6 +210,7 @@ export default function LeadsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>E-Mail</TableHead>
+                <TableHead>Produkt</TableHead>
                 <TableHead>Quelle</TableHead>
                 <TableHead>Formular</TableHead>
                 <TableHead>Status</TableHead>
@@ -216,6 +222,11 @@ export default function LeadsPage() {
               {filteredLeads.map((lead) => (
                 <TableRow key={lead.id} className="cursor-pointer hover:bg-gray-50" onClick={() => setRawLeadId(lead.id)}>
                   <TableCell className="font-medium">{lead.email}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="font-normal">
+                      {productLabels[lead.product || ""] || lead.product || "-"}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="capitalize">{lead.source_name}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="font-normal">
@@ -246,7 +257,7 @@ export default function LeadsPage() {
               ))}
               {filteredLeads.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                     {hasActiveFilters ? "Keine Leads mit diesen Filtern gefunden" : "Keine Leads gefunden"}
                   </TableCell>
                 </TableRow>

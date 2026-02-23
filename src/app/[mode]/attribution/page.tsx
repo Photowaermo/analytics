@@ -414,6 +414,13 @@ export default function AttributionPage() {
                     <p className="text-xs text-gray-500">Keine Aktion nötig</p>
                   </div>
                 </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="h-3 w-3 rounded-full bg-gray-300 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">Archiviert</p>
+                    <p className="text-xs text-gray-500">Keine Aktion nötig</p>
+                  </div>
+                </div>
                 <div className="flex items-start gap-2.5 border-t pt-2">
                   <AlertTriangle className="h-3 w-3 text-orange-500 mt-0.5 shrink-0" />
                   <div>

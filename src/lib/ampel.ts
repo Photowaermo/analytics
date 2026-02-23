@@ -3,7 +3,7 @@ import type { Attribution } from "./api";
 
 // --- Types ---
 
-export type AmpelStatus = "green" | "yellow" | "red" | "blue" | "gray" | "kill";
+export type AmpelStatus = "green" | "yellow" | "red" | "blue" | "gray" | "archived" | "kill";
 
 export interface AmpelConfig {
   targetCpl: number;
@@ -76,6 +76,12 @@ const ampelMeta: Record<
     label: "Pausiert",
     recommendation: "Pausiert – keine Aktion",
   },
+  archived: {
+    color: "bg-gray-300",
+    bgColor: "bg-gray-50",
+    label: "Archiviert",
+    recommendation: "Archiviert – keine Aktion",
+  },
   kill: {
     color: "bg-red-900",
     bgColor: "bg-red-100",
@@ -93,6 +99,7 @@ const STATUS_PRIORITY: Record<AmpelStatus, number> = {
   kill: 4,
   blue: 5,
   gray: 6,
+  archived: 7,
 };
 
 export function getWorstStatus(statuses: AmpelStatus[]): AmpelStatus {
@@ -170,7 +177,15 @@ export function evaluateAmpel(
   level: "campaign" | "adset" | "ad",
   config: AmpelConfig
 ): AmpelResult {
-  // 1. PAUSED check (highest priority)
+  // 1. ARCHIVED check (highest priority)
+  if (
+    item.status === "ARCHIVED" ||
+    item.effective_status === "ARCHIVED"
+  ) {
+    return buildResult("archived", level, config, item);
+  }
+
+  // 2. PAUSED check
   if (
     item.effective_status &&
     PAUSED_STATUSES.includes(item.effective_status)
@@ -178,43 +193,43 @@ export function evaluateAmpel(
     return buildResult("gray", level, config, item);
   }
 
-  // 2. Determine thresholds by level (campaign uses adset thresholds)
+  // 3. Determine thresholds by level (campaign uses adset thresholds)
   const minLeads = level === "ad" ? config.minLeadsAd : config.minLeadsAdset;
   const spendThreshold =
     level === "ad" ? config.adSpendThreshold : config.adsetSpendThreshold;
 
-  // 3. Flags
+  // 4. Flags
   const isNew = isWithin72h(item.created_date);
   const hasEnoughLeads = item.leads >= minLeads;
   const hasEnoughSpend = item.spend >= spendThreshold;
 
-  // 4. Learning phase: not enough leads AND not enough spend
+  // 5. Learning phase: not enough leads AND not enough spend
   if (!hasEnoughLeads && !hasEnoughSpend) {
     return buildResult("blue", level, config, item);
   }
 
-  // 5. 72h rule: still new + not enough leads (but has enough spend to evaluate)
+  // 6. 72h rule: still new + not enough leads (but has enough spend to evaluate)
   //    After 72h this falls through to kill/red checks below
   if (isNew && !hasEnoughLeads) {
     return buildResult("blue", level, config, item);
   }
 
-  // 6. KILL: 0 leads + spend >= kill threshold
+  // 7. KILL: 0 leads + spend >= kill threshold
   if (item.leads === 0 && item.spend >= config.killThresholdSpend) {
     return buildResult("kill", level, config, item);
   }
 
-  // 7. Critical: 0-1 leads despite sufficient spend
+  // 8. Critical: 0-1 leads despite sufficient spend
   if (item.leads <= 1 && hasEnoughSpend) {
     return buildResult("red", level, config, item);
   }
 
-  // 8. If still 0 leads but didn't hit kill threshold
+  // 9. If still 0 leads but didn't hit kill threshold
   if (item.leads === 0) {
     return buildResult("blue", level, config, item);
   }
 
-  // 9. CPL-based evaluation
+  // 10. CPL-based evaluation
   const yellowThreshold = config.targetCpl * config.yellowMultiplier;
 
   if (item.cpl <= config.targetCpl) {

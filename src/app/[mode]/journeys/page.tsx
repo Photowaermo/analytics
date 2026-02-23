@@ -59,6 +59,13 @@ const statusLabels: Record<string, string> = {
   "sync_failed": "Sync Fehler",
 };
 
+const productLabels: Record<string, string> = {
+  pv: "PV",
+  heatpump: "Wärmepumpe",
+  kombi: "Kombi",
+  unknown: "Unbekannt",
+};
+
 const statusOptions = [
   { value: "all", label: "Alle Status" },
   { value: "new", label: "Neu" },
@@ -178,6 +185,7 @@ export default function JourneysPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>E-Mail</TableHead>
+                <TableHead>Produkt</TableHead>
                 <TableHead>Quelle</TableHead>
                 <TableHead>Formular</TableHead>
                 {mode === "ads" && (
@@ -196,6 +204,11 @@ export default function JourneysPage() {
               {filteredLeads.map((lead) => (
                 <TableRow key={lead.id} className="cursor-pointer hover:bg-gray-50" onClick={() => setRawLeadId(lead.id)}>
                   <TableCell className="font-medium">{lead.email}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="font-normal">
+                      {productLabels[lead.product || ""] || lead.product || "-"}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="capitalize">{lead.source_name}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="font-normal">
@@ -271,7 +284,7 @@ export default function JourneysPage() {
               ))}
               {filteredLeads.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={mode === "ads" ? 9 : 6} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={mode === "ads" ? 10 : 7} className="text-center py-8 text-gray-500">
                     Keine Leads für {modeLabel} gefunden
                   </TableCell>
                 </TableRow>
