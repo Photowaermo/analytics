@@ -13,6 +13,7 @@ const presets: { label: string; value: DatePreset }[] = [
   { label: "Gestern", value: "yesterday" },
   { label: "Letzte 7 Tage", value: "7d" },
   { label: "Letzte 30 Tage", value: "30d" },
+  { label: "Gesamter Zeitraum", value: "all" },
 ];
 
 export function DateRangePicker() {

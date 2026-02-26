@@ -21,7 +21,7 @@ import { ErrorCard } from "@/components/ui/error-card";
 import { KpiCard, KpiCardSkeleton } from "@/components/ui/kpi-card";
 import type { Seller } from "@/lib/api";
 
-type SortField = "name" | "leads" | "won" | "revenue" | "conversion_rate" | "avg_deal_value";
+type SortField = "name" | "leads" | "won" | "lost" | "revenue" | "conversion_rate" | "avg_deal_value";
 type SortDirection = "asc" | "desc";
 
 const statusColors: Record<string, string> = {
@@ -53,7 +53,7 @@ const productLabels: Record<string, string> = {
   unknown: "Unbekannt",
 };
 
-const TOTAL_COLUMNS = 14;
+const TOTAL_COLUMNS = 15;
 
 function SellerLeadsRow({ seller }: { seller: Seller }) {
   const { dateRange } = useDateRange();
@@ -261,6 +261,12 @@ export function SellerPage() {
                   >
                     Gewonnen <SortIcon field="won" />
                   </TableHead>
+                  <TableHead
+                    className="text-right cursor-pointer select-none"
+                    onClick={() => handleSort("lost")}
+                  >
+                    Verloren <SortIcon field="lost" />
+                  </TableHead>
                   <TableHead className="text-right">PV</TableHead>
                   <TableHead className="text-right">WP</TableHead>
                   <TableHead className="text-right">Kombi</TableHead>
@@ -313,6 +319,7 @@ export function SellerPage() {
                         <TableCell className="font-medium">{seller.name}</TableCell>
                         <TableCell className="text-right">{formatNumber(seller.leads)}</TableCell>
                         <TableCell className="text-right font-semibold">{formatNumber(seller.won)}</TableCell>
+                        <TableCell className="text-right text-red-600">{seller.lost != null ? formatNumber(seller.lost) : "-"}</TableCell>
                         <TableCell className="text-right text-gray-500">{formatNumber(seller.won_pv)}</TableCell>
                         <TableCell className="text-right text-gray-500">{formatNumber(seller.won_wp)}</TableCell>
                         <TableCell className="text-right text-gray-500">{formatNumber(seller.won_kombi)}</TableCell>
@@ -325,9 +332,9 @@ export function SellerPage() {
                         <TableCell className="text-right">
                           <span
                             className={
-                              seller.conversion_rate >= 50
+                              seller.conversion_rate >= 10
                                 ? "text-green-600 font-semibold"
-                                : seller.conversion_rate >= 25
+                                : seller.conversion_rate >= 5
                                   ? "text-yellow-600"
                                   : "text-red-600"
                             }

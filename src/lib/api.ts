@@ -64,6 +64,7 @@ export interface Lead {
   adset_name?: string;
   ad_name?: string;
   product?: string;
+  seller?: string;
 }
 
 export interface TimelineEvent {
@@ -209,6 +210,44 @@ export async function getLeadRaw(leadId: string): Promise<Record<string, any>> {
   return fetchAPI(`/lead/${leadId}/raw`);
 }
 
+// --- Status History ---
+
+export interface StatusHistoryEntry {
+  from_status: string | null;
+  to_status: string;
+  trigger: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface StatusHistory {
+  lead_id: string;
+  email: string;
+  current_status: string;
+  history: StatusHistoryEntry[];
+}
+
+export async function getStatusHistory(leadId: string): Promise<StatusHistory> {
+  return fetchAPI(`/lead/${leadId}/status-history`);
+}
+
+// --- Status Changes (batch) ---
+
+export interface StatusChange {
+  lead_id: string;
+  email: string;
+  from_status: string;
+  to_status: string;
+  trigger: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export async function getStatusChanges(startDate: string, endDate: string, limit = 100): Promise<StatusChange[]> {
+  const params = new URLSearchParams({ start_date: startDate, end_date: endDate, limit: String(limit) });
+  return fetchAPI(`/status-changes?${params.toString()}`);
+}
+
 export async function getSettings(): Promise<Settings> {
   return fetchAPI("/settings");
 }
@@ -235,6 +274,7 @@ export interface Seller {
   name: string;
   leads: number;
   won: number;
+  lost: number;
   won_pv: number;
   won_wp: number;
   won_kombi: number;

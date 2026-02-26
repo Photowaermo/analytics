@@ -9,6 +9,8 @@ import {
   getJourneys,
   getJourneyDetail,
   getLeadRaw,
+  getStatusHistory,
+  getStatusChanges,
   getSettings,
   updateSettings,
   getHealth,
@@ -32,6 +34,8 @@ export const queryKeys = {
     ["journeys", limit, offset, provider, platform, startDate, endDate, product] as const,
   journeyDetail: (id: string) => ["journey", id] as const,
   leadRaw: (id: string) => ["leadRaw", id] as const,
+  statusHistory: (id: string) => ["statusHistory", id] as const,
+  statusChanges: (startDate: string, endDate: string, limit: number) => ["statusChanges", startDate, endDate, limit] as const,
   settings: ["settings"] as const,
   health: ["health"] as const,
   unmatched: (limit: number) => ["unmatched", limit] as const,
@@ -98,6 +102,21 @@ export function useLeadRaw(id: string) {
     queryKey: queryKeys.leadRaw(id),
     queryFn: () => getLeadRaw(id),
     enabled: !!id,
+  });
+}
+
+export function useStatusHistory(leadId: string) {
+  return useQuery({
+    queryKey: queryKeys.statusHistory(leadId),
+    queryFn: () => getStatusHistory(leadId),
+    enabled: !!leadId,
+  });
+}
+
+export function useStatusChanges(startDate: string, endDate: string, limit = 100) {
+  return useQuery({
+    queryKey: queryKeys.statusChanges(startDate, endDate, limit),
+    queryFn: () => getStatusChanges(startDate, endDate, limit),
   });
 }
 

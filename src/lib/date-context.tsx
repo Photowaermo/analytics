@@ -14,7 +14,7 @@ interface DateContextType {
   setPreset: (preset: DatePreset) => void;
 }
 
-export type DatePreset = "today" | "yesterday" | "7d" | "30d" | "custom";
+export type DatePreset = "today" | "yesterday" | "7d" | "30d" | "all" | "custom";
 
 const DateContext = createContext<DateContextType | undefined>(undefined);
 
@@ -37,6 +37,11 @@ function getPresetDates(preset: DatePreset): DateRange {
     case "7d":
       return {
         startDate: format(subDays(today, 7), formatStr),
+        endDate: format(today, formatStr),
+      };
+    case "all":
+      return {
+        startDate: "2024-01-01",
         endDate: format(today, formatStr),
       };
     case "30d":
