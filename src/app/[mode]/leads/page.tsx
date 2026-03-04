@@ -81,6 +81,7 @@ const formOptions = [
   { value: "lead_form", label: "Lead-Formular" },
   { value: "website", label: "Website" },
   { value: "api", label: "API" },
+  { value: "offline", label: "Offline" },
 ];
 
 const statusOptions = [
