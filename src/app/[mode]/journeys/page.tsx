@@ -199,6 +199,7 @@ export default function JourneysPage() {
                   </>
                 )}
                 <TableHead>Status</TableHead>
+                <TableHead>Gewonnen am</TableHead>
                 <TableHead>Erstellt am</TableHead>
                 <TableHead className="text-right">Aktionen</TableHead>
               </TableRow>
@@ -274,6 +275,9 @@ export default function JourneysPage() {
                       {statusLabels[lead.crm_status] || lead.crm_status}
                     </Badge>
                   </TableCell>
+                  <TableCell className="text-sm">
+                    {lead.won_at ? format(parseISO(lead.won_at), "d. MMM yyyy", { locale: de }) : "-"}
+                  </TableCell>
                   <TableCell>
                     {format(parseISO(lead.created_at), "d. MMM yyyy, HH:mm", { locale: de })}
                   </TableCell>
@@ -291,7 +295,7 @@ export default function JourneysPage() {
               ))}
               {filteredLeads.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={mode === "ads" ? 10 : 7} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={mode === "ads" ? 11 : 8} className="text-center py-8 text-gray-500">
                     Keine Leads für {modeLabel} gefunden
                   </TableCell>
                 </TableRow>

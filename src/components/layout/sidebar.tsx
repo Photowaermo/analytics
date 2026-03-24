@@ -16,10 +16,16 @@ import {
   X,
   Users,
   History,
+  UserX,
+  Copy,
+  AlertTriangle,
+  Clock,
+  ArrowRightLeft,
+  Shuffle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMode, AnalyticsMode } from "@/lib/mode-context";
-import { useView } from "@/lib/view-context";
+import { useView, type SellerSubPage } from "@/lib/view-context";
 import { ViewToggle } from "./view-toggle";
 
 // Navigation items per mode (relative paths within mode)
@@ -56,7 +62,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const { mode } = useMode();
-  const { view } = useView();
+  const { view, sellerPage, setSellerPage } = useView();
 
   const modeNavItems = navItemsByMode[mode];
 
@@ -141,10 +147,34 @@ export function Sidebar() {
               })}
             </div>
           ) : (
-            <div className="p-4 flex-1">
-              <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Verkäufer
-              </div>
+            <div className="space-y-1 p-4 flex-1">
+              {([
+                { key: "performance" as SellerSubPage, label: "Performance", icon: Users },
+                { key: "uncontacted" as SellerSubPage, label: "Unkontaktiert", icon: UserX },
+                { key: "duplicates" as SellerSubPage, label: "Duplikate", icon: Copy },
+                { key: "stale" as SellerSubPage, label: "Überfällig", icon: AlertTriangle },
+                { key: "response-times" as SellerSubPage, label: "Reaktionszeiten", icon: Clock },
+                { key: "kanban-changes" as SellerSubPage, label: "Kanban-Verlauf", icon: ArrowRightLeft },
+                { key: "kam-mismatches" as SellerSubPage, label: "KAM-Mismatch", icon: Shuffle },
+              ]).map((item) => {
+                const Icon = item.icon;
+                const isActive = sellerPage === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    onClick={() => { setSellerPage(item.key); setIsOpen(false); }}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                    {item.label}
+                  </button>
+                );
+              })}
             </div>
           )}
 

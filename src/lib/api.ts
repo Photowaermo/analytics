@@ -65,6 +65,8 @@ export interface Lead {
   ad_name?: string;
   product?: string;
   seller?: string;
+  won_at?: string | null;
+  kanban_status?: string | null;
 }
 
 export interface TimelineEvent {
@@ -305,6 +307,167 @@ export interface SellerLead {
 export async function getSellers(startDate: string, endDate: string): Promise<Seller[]> {
   const params = new URLSearchParams({ start_date: startDate, end_date: endDate });
   return fetchAPI(`/sellers?${params.toString()}`);
+}
+
+// --- Uncontacted ---
+
+export interface UncontactedLead {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  source_name: string;
+  submission_type: string;
+  crm_status: string;
+  created_at: string;
+  seller: string | null;
+  product: string | null;
+  kanban_status: string | null;
+  pipeline: string | null;
+  days_waiting: number;
+}
+
+export interface UncontactedResponse {
+  total: number;
+  by_seller: Record<string, number>;
+  leads: UncontactedLead[];
+}
+
+export async function getUncontacted(startDate: string, endDate: string, limit = 500, seller?: string): Promise<UncontactedResponse> {
+  const params = new URLSearchParams({ start_date: startDate, end_date: endDate, limit: String(limit) });
+  if (seller) params.append("seller", seller);
+  return fetchAPI(`/uncontacted?${params.toString()}`);
+}
+
+// --- Duplicates ---
+
+export interface DuplicateLead {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  source_name: string;
+  crm_id: string;
+  crm_status: string;
+  created_at: string;
+  seller: string | null;
+  kanban_status: string | null;
+  pipeline: string | null;
+}
+
+export interface DuplicatesResponse {
+  total_groups: number;
+  total_leads: number;
+  groups: Record<string, DuplicateLead[]>;
+}
+
+export async function getDuplicates(limit = 200): Promise<DuplicatesResponse> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  return fetchAPI(`/duplicates?${params.toString()}`);
+}
+
+// --- Stale Leads ---
+
+export interface StaleLead {
+  id: string;
+  email: string;
+  name: string;
+  pipeline: string;
+  kanban_status: string;
+  since: string;
+  limit_hours: number;
+  elapsed_hours: number;
+  overdue_hours: number;
+  warning_level: number;
+}
+
+export interface StaleLeadsSeller {
+  seller: string;
+  leads: StaleLead[];
+}
+
+export interface StaleLeadsResponse {
+  total: number;
+  by_seller: StaleLeadsSeller[];
+}
+
+export async function getStaleLeads(seller?: string): Promise<StaleLeadsResponse> {
+  const params = new URLSearchParams();
+  if (seller) params.append("seller", seller);
+  const qs = params.toString();
+  return fetchAPI(`/stale-leads${qs ? `?${qs}` : ""}`);
+}
+
+// --- Response Times ---
+
+export interface ResponseTimeSeller {
+  seller: string;
+  lead_count: number;
+  avg_hours: number;
+  median_hours: number;
+}
+
+export interface ResponseTimesResponse {
+  overall: {
+    total_leads: number;
+    avg_hours: number;
+  };
+  by_seller: ResponseTimeSeller[];
+}
+
+export async function getResponseTimes(startDate: string, endDate: string, seller?: string): Promise<ResponseTimesResponse> {
+  const params = new URLSearchParams({ start_date: startDate, end_date: endDate });
+  if (seller) params.append("seller", seller);
+  return fetchAPI(`/response-times?${params.toString()}`);
+}
+
+// --- Kanban Changes ---
+
+export interface KanbanChange {
+  lead_id: string;
+  email: string;
+  name: string;
+  pipeline: string;
+  from_status: string;
+  to_status: string;
+  changed_at: string;
+  seller: string;
+}
+
+export interface KanbanChangesResponse {
+  total: number;
+  changes: KanbanChange[];
+}
+
+export async function getKanbanChanges(startDate?: string, endDate?: string, seller?: string): Promise<KanbanChangesResponse> {
+  const params = new URLSearchParams();
+  if (startDate) params.append("start_date", startDate);
+  if (endDate) params.append("end_date", endDate);
+  if (seller) params.append("seller", seller);
+  const qs = params.toString();
+  return fetchAPI(`/kanban-changes${qs ? `?${qs}` : ""}`);
+}
+
+// --- KAM Mismatches ---
+
+export interface KamMismatch {
+  bookingId: string;
+  customerName: string;
+  customerEmail: string;
+  startAt: string;
+  bookingKam: { name: string; email: string };
+  platformKam: string;
+}
+
+export interface KamMismatchesResponse {
+  total: number;
+  mismatches: KamMismatch[];
+}
+
+export async function getKamMismatches(): Promise<KamMismatchesResponse> {
+  const res = await fetch("/api/kam-mismatches");
+  if (!res.ok) throw new Error("Failed to fetch KAM mismatches");
+  return res.json();
 }
 
 export async function getSellerLeads(

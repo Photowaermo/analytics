@@ -218,6 +218,8 @@ export default function LeadsPage() {
                 <TableHead>Formular</TableHead>
                 <TableHead>Verkäufer</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Kanban</TableHead>
+                <TableHead>Gewonnen am</TableHead>
                 <TableHead>Erstellt am</TableHead>
                 <TableHead className="text-right">Aktionen</TableHead>
               </TableRow>
@@ -252,6 +254,14 @@ export default function LeadsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
+                    <Badge variant="outline" className="text-xs font-normal">
+                      {lead.kanban_status || "–"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {lead.won_at ? format(parseISO(lead.won_at), "d. MMM yyyy", { locale: de }) : "-"}
+                  </TableCell>
+                  <TableCell>
                     {format(parseISO(lead.created_at), "d. MMM yyyy, HH:mm", { locale: de })}
                   </TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
@@ -268,7 +278,7 @@ export default function LeadsPage() {
               ))}
               {filteredLeads.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={10} className="text-center py-8 text-gray-500">
                     {hasActiveFilters ? "Keine Leads mit diesen Filtern gefunden" : "Keine Leads gefunden"}
                   </TableCell>
                 </TableRow>

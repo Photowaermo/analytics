@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Search, ChevronDown, ChevronUp, ChevronRight, Trophy, Users, DollarSign, TrendingUp } from "lucide-react";
+import { usePersistedState } from "@/lib/use-persisted-state";
 import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { useDateRange } from "@/lib/date-context";
@@ -21,7 +22,7 @@ import { ErrorCard } from "@/components/ui/error-card";
 import { KpiCard, KpiCardSkeleton } from "@/components/ui/kpi-card";
 import type { Seller } from "@/lib/api";
 
-type SortField = "name" | "leads" | "won" | "lost" | "revenue" | "conversion_rate" | "avg_deal_value";
+type SortField = "name" | "leads" | "won" | "lost" | "revenue" | "conversion_rate" | "avg_deal_value" | null;
 type SortDirection = "asc" | "desc";
 
 const statusColors: Record<string, string> = {
@@ -138,17 +139,19 @@ export function SellerPage() {
     dateRange.endDate
   );
 
-  const [searchFilter, setSearchFilter] = useState("");
-  const [sortField, setSortField] = useState<SortField>("revenue");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [searchFilter, setSearchFilter] = usePersistedState("seller-search", "");
+  const [sortField, setSortField] = usePersistedState<SortField>("seller-sort-field", null);
+  const [sortDirection, setSortDirection] = usePersistedState<SortDirection>("seller-sort-dir", "desc");
   const [expandedSeller, setExpandedSeller] = useState<string | null>(null);
 
   const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
+    if (sortField !== field) {
       setSortField(field);
       setSortDirection("desc");
+    } else if (sortDirection === "desc") {
+      setSortDirection("asc");
+    } else {
+      setSortField(null);
     }
   };
 
@@ -163,18 +166,20 @@ export function SellerPage() {
         s.name.toLowerCase().includes(searchFilter.toLowerCase())
       );
     }
-    result = [...result].sort((a, b) => {
-      const aVal = a[sortField];
-      const bVal = b[sortField];
-      if (typeof aVal === "string") {
+    if (sortField) {
+      result = [...result].sort((a, b) => {
+        const aVal = a[sortField];
+        const bVal = b[sortField];
+        if (typeof aVal === "string") {
+          return sortDirection === "asc"
+            ? aVal.localeCompare(bVal as string)
+            : (bVal as string).localeCompare(aVal);
+        }
         return sortDirection === "asc"
-          ? aVal.localeCompare(bVal as string)
-          : (bVal as string).localeCompare(aVal);
-      }
-      return sortDirection === "asc"
-        ? (aVal as number) - (bVal as number)
-        : (bVal as number) - (aVal as number);
-    });
+          ? (aVal as number) - (bVal as number)
+          : (bVal as number) - (aVal as number);
+      });
+    }
     return result;
   }, [sellers, searchFilter, sortField, sortDirection]);
 

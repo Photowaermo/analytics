@@ -18,7 +18,13 @@ const presets: { label: string; value: DatePreset }[] = [
 
 export function DateRangePicker() {
   const { dateRange, setDateRange, setPreset } = useDateRange();
-  const [activePreset, setActivePreset] = useState<DatePreset>("30d");
+  const [activePreset, setActivePreset] = useState<DatePreset>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("date-preset");
+      if (stored) return stored as DatePreset;
+    }
+    return "30d";
+  });
   const [isOpen, setIsOpen] = useState(false);
 
   const handlePresetClick = (preset: DatePreset) => {

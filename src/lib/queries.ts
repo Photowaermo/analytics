@@ -17,6 +17,12 @@ import {
   getUnmatched,
   getSellers,
   getSellerLeads,
+  getUncontacted,
+  getDuplicates,
+  getStaleLeads,
+  getResponseTimes,
+  getKanbanChanges,
+  getKamMismatches,
   type Settings,
 } from "./api";
 
@@ -43,6 +49,15 @@ export const queryKeys = {
     ["sellers", startDate, endDate] as const,
   sellerLeads: (email: string, startDate: string, endDate: string) =>
     ["sellerLeads", email, startDate, endDate] as const,
+  uncontacted: (startDate: string, endDate: string, limit: number, seller?: string) =>
+    ["uncontacted", startDate, endDate, limit, seller] as const,
+  duplicates: (limit: number) => ["duplicates", limit] as const,
+  staleLeads: (seller?: string) => ["staleLeads", seller] as const,
+  responseTimes: (startDate: string, endDate: string, seller?: string) =>
+    ["responseTimes", startDate, endDate, seller] as const,
+  kanbanChanges: (startDate?: string, endDate?: string, seller?: string) =>
+    ["kanbanChanges", startDate, endDate, seller] as const,
+  kamMismatches: ["kamMismatches"] as const,
 };
 
 // Hooks
@@ -156,6 +171,48 @@ export function useSellers(startDate: string, endDate: string) {
   return useQuery({
     queryKey: queryKeys.sellers(startDate, endDate),
     queryFn: () => getSellers(startDate, endDate),
+  });
+}
+
+export function useUncontacted(startDate: string, endDate: string, limit = 500, seller?: string) {
+  return useQuery({
+    queryKey: queryKeys.uncontacted(startDate, endDate, limit, seller),
+    queryFn: () => getUncontacted(startDate, endDate, limit, seller),
+  });
+}
+
+export function useDuplicates(limit = 200) {
+  return useQuery({
+    queryKey: queryKeys.duplicates(limit),
+    queryFn: () => getDuplicates(limit),
+  });
+}
+
+export function useStaleLeads(seller?: string) {
+  return useQuery({
+    queryKey: queryKeys.staleLeads(seller),
+    queryFn: () => getStaleLeads(seller),
+  });
+}
+
+export function useResponseTimes(startDate: string, endDate: string, seller?: string) {
+  return useQuery({
+    queryKey: queryKeys.responseTimes(startDate, endDate, seller),
+    queryFn: () => getResponseTimes(startDate, endDate, seller),
+  });
+}
+
+export function useKanbanChanges(startDate?: string, endDate?: string, seller?: string) {
+  return useQuery({
+    queryKey: queryKeys.kanbanChanges(startDate, endDate, seller),
+    queryFn: () => getKanbanChanges(startDate, endDate, seller),
+  });
+}
+
+export function useKamMismatches() {
+  return useQuery({
+    queryKey: queryKeys.kamMismatches,
+    queryFn: () => getKamMismatches(),
   });
 }
 

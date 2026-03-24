@@ -53,12 +53,47 @@ function getPresetDates(preset: DatePreset): DateRange {
   }
 }
 
+function getInitialDateRange(): DateRange {
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("date-range");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed.startDate && parsed.endDate) return parsed;
+      } catch { /* ignore */ }
+    }
+  }
+  return getPresetDates("30d");
+}
+
+function getInitialPreset(): DatePreset {
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("date-preset");
+    if (stored && ["today", "yesterday", "7d", "30d", "all", "custom"].includes(stored)) {
+      return stored as DatePreset;
+    }
+  }
+  return "30d";
+}
+
 export function DateProvider({ children }: { children: ReactNode }) {
-  const [dateRange, setDateRange] = useState<DateRange>(getPresetDates("30d"));
+  const [dateRange, setDateRangeState] = useState<DateRange>(getInitialDateRange);
+  const [, setActivePreset] = useState<DatePreset>(getInitialPreset);
+
+  const setDateRange = (range: DateRange) => {
+    localStorage.setItem("date-range", JSON.stringify(range));
+    localStorage.setItem("date-preset", "custom");
+    setDateRangeState(range);
+    setActivePreset("custom");
+  };
 
   const setPreset = (preset: DatePreset) => {
     if (preset !== "custom") {
-      setDateRange(getPresetDates(preset));
+      const range = getPresetDates(preset);
+      localStorage.setItem("date-range", JSON.stringify(range));
+      localStorage.setItem("date-preset", preset);
+      setDateRangeState(range);
+      setActivePreset(preset);
     }
   };
 
