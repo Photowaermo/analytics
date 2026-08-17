@@ -16,21 +16,52 @@ function getAuthSecret(): string {
   return secret;
 }
 
+/**
+ * Zwei Zugaenge mit unterschiedlichem Umfang:
+ *   "admin"      — volles Dashboard, erreicht auch den Schnellanruf-Tab
+ *   "speed_dial" — ausschliesslich der Schnellanruf-Tab, keine Admin-Seiten
+ *
+ * Der Schnellanruf wird von einer externen Person bedient, die keine Umsatz-
+ * und Vertriebszahlen sehen soll — daher ein eigenes Passwort statt eines
+ * geteilten.
+ */
+export type Role = "admin" | "speed_dial";
+
 function getPassword(): string {
   return process.env.AUTH_PASSWORD || "pw123";
 }
 
-export function verifyPassword(password: string): boolean {
-  const correctPassword = getPassword();
-  // Constant-time comparison to prevent timing attacks
-  if (password.length !== correctPassword.length) {
+function getSpeedDialPassword(): string {
+  return process.env.AUTH_PASSWORD_SPEED_DIAL || "go123";
+}
+
+function constantTimeEquals(a: string, b: string): boolean {
+  // Laengenvergleich vorab ist unvermeidbar; der Rest laeuft zeitkonstant.
+  if (a.length !== b.length) {
     return false;
   }
   let result = 0;
-  for (let i = 0; i < password.length; i++) {
-    result |= password.charCodeAt(i) ^ correctPassword.charCodeAt(i);
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
   return result === 0;
+}
+
+/**
+ * Prueft das Passwort und liefert die zugehoerige Rolle, sonst null.
+ * Beide Passwoerter werden immer geprueft, damit die Laufzeit nicht verraet,
+ * welches der beiden getroffen wurde.
+ */
+export function verifyPasswordRole(password: string): Role | null {
+  const istAdmin = constantTimeEquals(password, getPassword());
+  const istSpeedDial = constantTimeEquals(password, getSpeedDialPassword());
+  if (istAdmin) return "admin";
+  if (istSpeedDial) return "speed_dial";
+  return null;
+}
+
+export function verifyPassword(password: string): boolean {
+  return verifyPasswordRole(password) !== null;
 }
 
 // Create HMAC signature using Web Crypto API (works in Edge Runtime)
@@ -62,10 +93,11 @@ async function verifySignature(data: string, signature: string): Promise<boolean
   return result === 0;
 }
 
-export async function createSessionToken(): Promise<string> {
+export async function createSessionToken(role: Role = "admin"): Promise<string> {
   const payload = {
     iat: Date.now(),
     exp: Date.now() + COOKIE_MAX_AGE * 1000,
+    role,
   };
   const data = JSON.stringify(payload);
   const signature = await createSignature(data);
@@ -107,6 +139,22 @@ export async function getSession(): Promise<boolean> {
     return false;
   }
   return verifySessionToken(token);
+}
+
+/** Rolle der aktuellen Sitzung, oder null wenn nicht angemeldet.
+ *  Tokens von vor der Rollen-Einfuehrung gelten als "admin". */
+export async function getSessionRole(): Promise<Role | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(COOKIE_NAME)?.value;
+  if (!token || !(await verifySessionToken(token))) {
+    return null;
+  }
+  try {
+    const data = Buffer.from(token.split(".")[0], "base64").toString("utf-8");
+    return JSON.parse(data).role === "speed_dial" ? "speed_dial" : "admin";
+  } catch {
+    return "admin";
+  }
 }
 
 export { COOKIE_NAME, COOKIE_MAX_AGE };

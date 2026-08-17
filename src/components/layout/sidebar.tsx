@@ -16,17 +16,10 @@ import {
   X,
   Users,
   History,
-  UserX,
-  Copy,
-  AlertTriangle,
-  Clock,
-  ArrowRightLeft,
-  Shuffle,
+  PhoneCall,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMode, AnalyticsMode } from "@/lib/mode-context";
-import { useView, type SellerSubPage } from "@/lib/view-context";
-import { ViewToggle } from "./view-toggle";
 
 // Navigation items per mode (relative paths within mode)
 const navItemsByMode: Record<AnalyticsMode, { path: string; label: string; icon: typeof LayoutDashboard }[]> = {
@@ -53,7 +46,10 @@ const navItemsByMode: Record<AnalyticsMode, { path: string; label: string; icon:
 };
 
 // Shared navigation items (always visible, absolute paths)
+// Der Schnellanruf steht bewusst hier statt in navItemsByMode: er haengt nicht
+// am Analytics-Modus, sondern ist ein eigener Arbeitsbereich.
 const sharedNavItems = [
+  { href: "/schnellanruf", label: "Schnellanruf", icon: PhoneCall },
   { href: "/health", label: "Systemstatus", icon: Activity },
   { href: "/settings", label: "Einstellungen", icon: Settings },
 ];
@@ -62,7 +58,6 @@ export function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const { mode } = useMode();
-  const { view, sellerPage, setSellerPage } = useView();
 
   const modeNavItems = navItemsByMode[mode];
 
@@ -106,9 +101,7 @@ export function Sidebar() {
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Image src="/Logo.png" alt="Logo" width={32} height={32} className="h-8 w-auto" />
-              <span className="ml-3 text-lg font-semibold text-gray-900">
-                {view === "seller" ? "Seller" : "Analytics"}
-              </span>
+              <span className="ml-3 text-lg font-semibold text-gray-900">Analytics</span>
             </div>
             <button
               onClick={() => setIsOpen(false)}
@@ -118,65 +111,31 @@ export function Sidebar() {
               <X className="h-5 w-5 text-gray-500" />
             </button>
           </div>
-          <ViewToggle />
         </div>
         <nav className="flex flex-col h-[calc(100vh-4rem)]">
-          {/* Mode-specific navigation */}
-          {view === "analytics" ? (
-            <div className="space-y-1 p-4 flex-1">
-              {modeNavItems.map((item) => {
-                const href = getFullHref(item.path);
-                const isActive = isModeItemActive(item.path);
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.path}
-                    href={href}
-                    onClick={() => setIsOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                    )}
-                  >
-                    <Icon className="h-5 w-5" />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="space-y-1 p-4 flex-1">
-              {([
-                { key: "performance" as SellerSubPage, label: "Performance", icon: Users },
-                { key: "uncontacted" as SellerSubPage, label: "Unkontaktiert", icon: UserX },
-                { key: "duplicates" as SellerSubPage, label: "Duplikate", icon: Copy },
-                { key: "stale" as SellerSubPage, label: "Überfällig", icon: AlertTriangle },
-                { key: "response-times" as SellerSubPage, label: "Reaktionszeiten", icon: Clock },
-                { key: "kanban-changes" as SellerSubPage, label: "Kanban-Verlauf", icon: ArrowRightLeft },
-                { key: "kam-mismatches" as SellerSubPage, label: "KAM-Mismatch", icon: Shuffle },
-              ]).map((item) => {
-                const Icon = item.icon;
-                const isActive = sellerPage === item.key;
-                return (
-                  <button
-                    key={item.key}
-                    onClick={() => { setSellerPage(item.key); setIsOpen(false); }}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                    )}
-                  >
-                    <Icon className="h-5 w-5" />
-                    {item.label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <div className="space-y-1 p-4 flex-1">
+            {modeNavItems.map((item) => {
+              const href = getFullHref(item.path);
+              const isActive = isModeItemActive(item.path);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.path}
+                  href={href}
+                  onClick={() => setIsOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
 
           {/* Shared navigation (bottom) */}
           <div className="border-t border-gray-200 p-4 space-y-1">

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 
 interface DateRange {
@@ -16,6 +16,9 @@ interface DateContextType {
 
 export type DatePreset = "today" | "yesterday" | "7d" | "30d" | "all" | "custom";
 
+// Gespeicherter Zeitraum verfällt nach dieser Zeit → Default (30 Tage) greift wieder.
+const TTL_MS = 10 * 60 * 1000; // 10 Minuten
+
 const DateContext = createContext<DateContextType | undefined>(undefined);
 
 function getPresetDates(preset: DatePreset): DateRange {
@@ -28,12 +31,13 @@ function getPresetDates(preset: DatePreset): DateRange {
         startDate: format(startOfDay(today), formatStr),
         endDate: format(endOfDay(today), formatStr),
       };
-    case "yesterday":
+    case "yesterday": {
       const yesterday = subDays(today, 1);
       return {
         startDate: format(startOfDay(yesterday), formatStr),
         endDate: format(endOfDay(yesterday), formatStr),
       };
+    }
     case "7d":
       return {
         startDate: format(subDays(today, 7), formatStr),
@@ -53,36 +57,42 @@ function getPresetDates(preset: DatePreset): DateRange {
   }
 }
 
-function getInitialDateRange(): DateRange {
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem("date-range");
-    if (stored) {
+export function DateProvider({ children }: { children: ReactNode }) {
+  const [dateRange, setDateRangeState] = useState<DateRange>(() => getPresetDates("30d"));
+  const [, setActivePreset] = useState<DatePreset>("30d");
+
+  // Restore from localStorage after hydration — nur wenn nicht abgelaufen (10 Min TTL).
+  useEffect(() => {
+    const ts = parseInt(localStorage.getItem("date-saved-at") || "0", 10);
+    const fresh = ts > 0 && Date.now() - ts <= TTL_MS;
+    if (!fresh) {
+      // Abgelaufen → gespeicherten Filter verwerfen, Default (30d) bleibt aktiv.
+      localStorage.removeItem("date-range");
+      localStorage.removeItem("date-preset");
+      localStorage.removeItem("date-saved-at");
+      return;
+    }
+    const storedRange = localStorage.getItem("date-range");
+    if (storedRange) {
       try {
-        const parsed = JSON.parse(stored);
-        if (parsed.startDate && parsed.endDate) return parsed;
+        const parsed = JSON.parse(storedRange);
+        if (parsed.startDate && parsed.endDate) setDateRangeState(parsed);
       } catch { /* ignore */ }
     }
-  }
-  return getPresetDates("30d");
-}
-
-function getInitialPreset(): DatePreset {
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem("date-preset");
-    if (stored && ["today", "yesterday", "7d", "30d", "all", "custom"].includes(stored)) {
-      return stored as DatePreset;
+    const storedPreset = localStorage.getItem("date-preset");
+    if (storedPreset && ["today", "yesterday", "7d", "30d", "all", "custom"].includes(storedPreset)) {
+      setActivePreset(storedPreset as DatePreset);
     }
-  }
-  return "30d";
-}
+  }, []);
 
-export function DateProvider({ children }: { children: ReactNode }) {
-  const [dateRange, setDateRangeState] = useState<DateRange>(getInitialDateRange);
-  const [, setActivePreset] = useState<DatePreset>(getInitialPreset);
+  const persist = (range: DateRange, preset: DatePreset) => {
+    localStorage.setItem("date-range", JSON.stringify(range));
+    localStorage.setItem("date-preset", preset);
+    localStorage.setItem("date-saved-at", String(Date.now()));
+  };
 
   const setDateRange = (range: DateRange) => {
-    localStorage.setItem("date-range", JSON.stringify(range));
-    localStorage.setItem("date-preset", "custom");
+    persist(range, "custom");
     setDateRangeState(range);
     setActivePreset("custom");
   };
@@ -90,8 +100,7 @@ export function DateProvider({ children }: { children: ReactNode }) {
   const setPreset = (preset: DatePreset) => {
     if (preset !== "custom") {
       const range = getPresetDates(preset);
-      localStorage.setItem("date-range", JSON.stringify(range));
-      localStorage.setItem("date-preset", preset);
+      persist(range, preset);
       setDateRangeState(range);
       setActivePreset(preset);
     }

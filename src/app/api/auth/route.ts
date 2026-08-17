@@ -5,7 +5,7 @@ import {
   clearRateLimit,
 } from "@/lib/rate-limit";
 import {
-  verifyPassword,
+  verifyPasswordRole,
   createSessionToken,
   COOKIE_NAME,
   COOKIE_MAX_AGE,
@@ -66,7 +66,8 @@ export async function POST(request: NextRequest) {
   }
 
   // Check password with constant-time comparison
-  if (!verifyPassword(password)) {
+  const role = verifyPasswordRole(password);
+  if (!role) {
     const result = recordFailedAttempt(ip);
 
     if (result.locked) {
@@ -95,9 +96,13 @@ export async function POST(request: NextRequest) {
   // Password correct - clear rate limit and create signed session token
   clearRateLimit(ip);
 
-  const sessionToken = await createSessionToken();
+  const sessionToken = await createSessionToken(role);
 
-  const response = NextResponse.json({ success: true });
+  // Der Schnellanruf-Zugang landet direkt auf seiner einzigen Seite.
+  const response = NextResponse.json({
+    success: true,
+    redirectTo: role === "speed_dial" ? "/schnellanruf" : "/",
+  });
   response.cookies.set(COOKIE_NAME, sessionToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

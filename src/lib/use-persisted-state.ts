@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 export function usePersistedState<T>(key: string, defaultValue: T): [T, (value: T) => void] {
-  const [state, setState] = useState<T>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(key);
-      if (stored !== null) {
-        try { return JSON.parse(stored); } catch { return defaultValue; }
-      }
+  const [state, setState] = useState<T>(defaultValue);
+
+  // Load from localStorage after hydration
+  useEffect(() => {
+    const stored = localStorage.getItem(key);
+    if (stored !== null) {
+      try { setState(JSON.parse(stored)); } catch { /* ignore */ }
     }
-    return defaultValue;
-  });
+  }, [key]);
 
   const setPersistedState = useCallback((value: T) => {
     localStorage.setItem(key, JSON.stringify(value));

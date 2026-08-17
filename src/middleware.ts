@@ -6,6 +6,22 @@ const COOKIE_NAME = "analytics_session";
 // Paths that don't require authentication
 const PUBLIC_PATHS = ["/auth", "/api/auth", "/health"];
 
+// Der Schnellanruf-Zugang (eigenes Passwort) sieht ausschliesslich diesen
+// Bereich — er wird von einer externen Person bedient, die keine Umsatz- und
+// Vertriebszahlen sehen soll. Admins erreichen ihn zusaetzlich ueber die Navigation.
+const SPEED_DIAL_PATH = "/schnellanruf";
+
+// Liest die Rolle aus dem bereits verifizierten Token. Tokens ohne Rollenfeld
+// stammen von vor der Einfuehrung und gelten als Admin.
+function readRole(token: string): "admin" | "speed_dial" {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[0]));
+    return payload.role === "speed_dial" ? "speed_dial" : "admin";
+  } catch {
+    return "admin";
+  }
+}
+
 // Verify token signature and expiration (Edge Runtime compatible)
 async function verifySessionToken(
   token: string,
@@ -69,7 +85,17 @@ export async function middleware(request: NextRequest) {
     (path) => pathname === path || pathname.startsWith(`${path}/`)
   );
 
+  // Öffentliche Pfade bleiben ohne Login erreichbar (z. B. /health für
+  // Monitoring). Eine angemeldete Schnellanruf-Sitzung wird trotzdem auf ihren
+  // Bereich begrenzt — sonst führte die Navigation dort hinaus, obwohl der
+  // Zugang ausdrücklich nur diesen einen Tab umfassen soll. /auth und /api/auth
+  // bleiben frei, sonst käme man weder rein noch raus.
   if (isPublicPath) {
+    const cookie = request.cookies.get(COOKIE_NAME)?.value;
+    const istAuthPfad = pathname === "/auth" || pathname.startsWith("/api/auth");
+    if (cookie && !istAuthPfad && readRole(cookie) === "speed_dial") {
+      return NextResponse.redirect(new URL(SPEED_DIAL_PATH, request.url));
+    }
     return NextResponse.next();
   }
 
@@ -105,6 +131,14 @@ export async function middleware(request: NextRequest) {
       path: "/",
     });
     return response;
+  }
+
+  // Rollenpruefung: der Schnellanruf-Zugang darf nur seinen eigenen Bereich sehen.
+  if (
+    readRole(authCookie.value) === "speed_dial" &&
+    !pathname.startsWith(SPEED_DIAL_PATH)
+  ) {
+    return NextResponse.redirect(new URL(SPEED_DIAL_PATH, request.url));
   }
 
   return NextResponse.next();

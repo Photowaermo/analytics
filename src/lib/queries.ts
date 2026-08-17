@@ -36,8 +36,8 @@ export const queryKeys = {
     ["attribution", startDate, endDate, level, campaign, adset, platform, product] as const,
   providers: (startDate: string, endDate: string, platform?: string, product?: string) =>
     ["providers", startDate, endDate, platform, product] as const,
-  journeys: (limit: number, offset: number, provider?: string, platform?: string, startDate?: string, endDate?: string, product?: string) =>
-    ["journeys", limit, offset, provider, platform, startDate, endDate, product] as const,
+  journeys: (limit: number, offset: number, provider?: string, platform?: string, startDate?: string, endDate?: string, product?: string, segment?: string) =>
+    ["journeys", limit, offset, provider, platform, startDate, endDate, product, segment] as const,
   journeyDetail: (id: string) => ["journey", id] as const,
   leadRaw: (id: string) => ["leadRaw", id] as const,
   statusHistory: (id: string) => ["statusHistory", id] as const,
@@ -97,10 +97,10 @@ export function useProviders(startDate: string, endDate: string, platform?: stri
   });
 }
 
-export function useJourneys(limit = 50, offset = 0, provider?: string, platform?: string, startDate?: string, endDate?: string, product?: string) {
+export function useJourneys(limit = 50, offset = 0, provider?: string, platform?: string, startDate?: string, endDate?: string, product?: string, segment?: string) {
   return useQuery({
-    queryKey: queryKeys.journeys(limit, offset, provider, platform, startDate, endDate, product),
-    queryFn: () => getJourneys(limit, offset, provider, platform, startDate, endDate, product),
+    queryKey: queryKeys.journeys(limit, offset, provider, platform, startDate, endDate, product, segment),
+    queryFn: () => getJourneys(limit, offset, provider, platform, startDate, endDate, product, segment),
   });
 }
 

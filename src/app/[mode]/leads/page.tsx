@@ -56,11 +56,9 @@ const statusLabels: Record<string, string> = {
   synced: "Synchronisiert",
 };
 
-const productLabels: Record<string, string> = {
-  pv: "PV",
-  heatpump: "Wärmepumpe",
-  kombi: "Kombi",
-  unknown: "Unbekannt",
+const segmentLabels: Record<string, string> = {
+  privat: "Privat",
+  gewerbe: "Gewerbe",
 };
 
 const sourceOptions = [
@@ -94,6 +92,12 @@ const statusOptions = [
   { value: "synced", label: "Synchronisiert" },
 ];
 
+const segmentOptions = [
+  { value: "all", label: "Alle Segmente" },
+  { value: "privat", label: "Privat" },
+  { value: "gewerbe", label: "Gewerbe" },
+];
+
 export default function LeadsPage() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [rawLeadId, setRawLeadId] = useState<string | null>(null);
@@ -102,11 +106,13 @@ export default function LeadsPage() {
   const [sourceFilter, setSourceFilter] = useState("all");
   const [formFilter, setFormFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [segmentFilter, setSegmentFilter] = useState("all");
 
   const { dateRange } = useDateRange();
   const { product } = useProduct();
   const productParam = getProductParam(product) || undefined;
-  const { data: leads, isLoading, isError, refetch } = useJourneys(1000, 0, undefined, undefined, dateRange.startDate, dateRange.endDate, productParam);
+  const segmentParam = segmentFilter !== "all" ? segmentFilter : undefined;
+  const { data: leads, isLoading, isError, refetch } = useJourneys(1000, 0, undefined, undefined, dateRange.startDate, dateRange.endDate, productParam, segmentParam);
   const { data: journeyDetail, isLoading: detailLoading, isError: detailError } = useJourneyDetail(selectedLeadId || "");
   const { data: leadRawData, isLoading: rawLoading } = useLeadRaw(rawLeadId || "");
   const { data: statusHistory, isLoading: statusHistoryLoading } = useStatusHistory(statusHistoryLeadId || "");
@@ -134,7 +140,7 @@ export default function LeadsPage() {
     });
   }, [leads, emailFilter, sourceFilter, formFilter, statusFilter]);
 
-  const hasActiveFilters = emailFilter || sourceFilter !== "all" || formFilter !== "all" || statusFilter !== "all";
+  const hasActiveFilters = emailFilter || sourceFilter !== "all" || formFilter !== "all" || statusFilter !== "all" || segmentFilter !== "all";
 
   if (isError) {
     return (
@@ -203,6 +209,18 @@ export default function LeadsPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={segmentFilter} onValueChange={setSegmentFilter}>
+          <SelectTrigger className="w-[160px] bg-white">
+            <SelectValue placeholder="Segment" />
+          </SelectTrigger>
+          <SelectContent className="bg-white">
+            {segmentOptions.map(option => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-xl border border-gray-200/50 bg-white/70 backdrop-blur-sm shadow-sm overflow-hidden">
@@ -213,7 +231,7 @@ export default function LeadsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>E-Mail</TableHead>
-                <TableHead>Produkt</TableHead>
+                <TableHead>Segment</TableHead>
                 <TableHead>Quelle</TableHead>
                 <TableHead>Formular</TableHead>
                 <TableHead>Verkäufer</TableHead>
@@ -229,8 +247,11 @@ export default function LeadsPage() {
                 <TableRow key={lead.id} className="cursor-pointer hover:bg-gray-50" onClick={() => setRawLeadId(lead.id)}>
                   <TableCell className="font-medium">{lead.email}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="font-normal">
-                      {productLabels[lead.product || ""] || lead.product || "-"}
+                    <Badge
+                      variant="outline"
+                      className={`font-normal ${(lead.segment || "privat") === "gewerbe" ? "border-amber-400 text-amber-700 bg-amber-50" : ""}`}
+                    >
+                      {segmentLabels[lead.segment || "privat"] || "Privat"}
                     </Badge>
                   </TableCell>
                   <TableCell className="capitalize">{lead.source_name}</TableCell>

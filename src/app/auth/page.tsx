@@ -55,7 +55,7 @@ export default function AuthPage() {
       const data = await response.json();
 
       if (data.success) {
-        router.push("/");
+        router.push(data.redirectTo || "/");
         router.refresh();
       } else {
         setError(data.error || "Authentifizierung fehlgeschlagen");

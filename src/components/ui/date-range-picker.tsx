@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -18,13 +18,12 @@ const presets: { label: string; value: DatePreset }[] = [
 
 export function DateRangePicker() {
   const { dateRange, setDateRange, setPreset } = useDateRange();
-  const [activePreset, setActivePreset] = useState<DatePreset>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("date-preset");
-      if (stored) return stored as DatePreset;
-    }
-    return "30d";
-  });
+  const [activePreset, setActivePreset] = useState<DatePreset>("30d");
+
+  useEffect(() => {
+    const stored = localStorage.getItem("date-preset");
+    if (stored) setActivePreset(stored as DatePreset);
+  }, []);
   const [isOpen, setIsOpen] = useState(false);
 
   const handlePresetClick = (preset: DatePreset) => {

@@ -64,6 +64,7 @@ export interface Lead {
   adset_name?: string;
   ad_name?: string;
   product?: string;
+  segment?: string;
   seller?: string;
   won_at?: string | null;
   kanban_status?: string | null;
@@ -193,13 +194,14 @@ export async function getProviders(startDate: string, endDate: string, platform?
   return fetchAPI(`/providers?${params.toString()}`);
 }
 
-export async function getJourneys(limit = 50, offset = 0, provider?: string, platform?: string, startDate?: string, endDate?: string, product?: string): Promise<Lead[]> {
+export async function getJourneys(limit = 50, offset = 0, provider?: string, platform?: string, startDate?: string, endDate?: string, product?: string, segment?: string): Promise<Lead[]> {
   const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
   if (provider) params.append("provider", provider);
   if (startDate) params.append("start_date", startDate);
   if (endDate) params.append("end_date", endDate);
   appendPlatformParams(params, platform);
   if (product) params.append("product", product);
+  if (segment) params.append("segment", segment);
   return fetchAPI(`/journeys/?${params.toString()}`);
 }
 
@@ -477,4 +479,71 @@ export async function getSellerLeads(
 ): Promise<SellerLead[]> {
   const params = new URLSearchParams({ start_date: startDate, end_date: endDate });
   return fetchAPI(`/sellers/${encodeURIComponent(sellerEmail)}/leads?${params.toString()}`);
+}
+
+// --- Schnellanruf (30-Minuten-Tab) -----------------------------------------
+
+/** Bearbeitungsstand eines Leads. null = noch nicht bearbeitet. */
+export type SpeedDialState =
+  | "nicht_erreicht"
+  | "erreicht_keine_zeit"
+  | "erreicht_formular";
+
+export interface SpeedDialLead {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  source: string | null;
+  product: string | null;
+  segment: string | null;
+  kam: string | null;
+  crm_status: string | null;
+  created_at: string;
+  /** Direktlink zum Kunden in Reonic. null, solange der Lead dort noch nicht liegt. */
+  reonic_url: string | null;
+  state: SpeedDialState | null;
+  note: string | null;
+  first_action_at: string | null;
+  /** Minuten von Lead-Eingang bis zur ersten Statusvergabe. */
+  reaktion_min: number | null;
+  in_time: boolean;
+  /** Faellt der Lead in das gewertete Fenster (Mo-Fr 9-17 Uhr)? */
+  gewertet: boolean;
+  updated_by: string | null;
+}
+
+export interface SpeedDialStats {
+  gewertet: number;
+  bearbeitet: number;
+  in_time: number;
+  quote: number | null;
+  erreicht: number;
+  formular: number;
+  schnitt_min: number | null;
+  offen: number;
+  ausserhalb: number;
+}
+
+export interface SpeedDialResponse {
+  start_at: string;
+  sla_minutes: number;
+  arbeitsfenster: { von: number; bis: number; tage: string };
+  leads: SpeedDialLead[];
+  stats: SpeedDialStats;
+}
+
+export async function getSpeedDialLeads(): Promise<SpeedDialResponse> {
+  return fetchAPI("/speed-dial/leads");
+}
+
+export async function setSpeedDialState(
+  leadId: string,
+  state: SpeedDialState | null,
+  note?: string | null
+): Promise<{ ok: boolean; state: SpeedDialState | null }> {
+  return fetchAPI(`/speed-dial/leads/${leadId}/state`, {
+    method: "POST",
+    body: JSON.stringify({ state, note: note ?? null }),
+  });
 }
