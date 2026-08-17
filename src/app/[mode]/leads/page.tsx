@@ -145,7 +145,7 @@ export default function LeadsPage() {
   if (isError) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Neueste Leads</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
         <ErrorCard message="Leads konnten nicht geladen werden" onRetry={() => refetch()} />
       </div>
     );
@@ -154,7 +154,7 @@ export default function LeadsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Neueste Leads</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
         {hasActiveFilters && leads && (
           <span className="text-sm text-gray-500">
             {filteredLeads.length} von {leads.length} Leads

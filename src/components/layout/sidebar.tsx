@@ -27,7 +27,7 @@ import { abmelden } from "@/lib/logout";
 const navItemsByMode: Record<AnalyticsMode, { path: string; label: string; icon: typeof LayoutDashboard }[]> = {
   all: [
     { path: "", label: "Übersicht", icon: LayoutDashboard },
-    { path: "leads", label: "Neueste Leads", icon: Users },
+    { path: "leads", label: "Leads", icon: Users },
     { path: "changes", label: "Neueste Änderungen", icon: History },
   ],
   ads: [
