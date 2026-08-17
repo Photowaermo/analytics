@@ -4,7 +4,7 @@
  * Schnellanruf — der 30-Minuten-Tab.
  *
  * Eine Person ruft jeden neu eingehenden Lead innerhalb von 30 Minuten an.
- * Die Seite pollt alle 20 Sekunden, meldet neue Leads mit Ton und
+ * Die Seite holt alle 10 Sekunden neue Daten, meldet neue Leads mit Ton und
  * Browser-Benachrichtigung und zeigt je Zeile einen laufenden Countdown.
  *
  * Gewertet wird nur Mo-Fr zwischen 9 und 17 Uhr. Leads ausserhalb stehen
@@ -22,9 +22,10 @@ import {
   type SpeedDialResponse,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { Bell, BellOff, ExternalLink, Phone, RefreshCw } from "lucide-react";
+import { abmelden } from "@/lib/logout";
+import { Bell, BellOff, ExternalLink, LogOut, Phone } from "lucide-react";
 
-const POLL_MS = 20_000;
+const POLL_MS = 10_000;
 
 const STATUS_OPTIONEN: { wert: SpeedDialState | ""; label: string }[] = [
   { wert: "", label: "Nicht bearbeitet" },
@@ -47,8 +48,10 @@ const SELECT_FARBE: Record<string, string> = {
   erreicht_formular: "bg-emerald-100 border-emerald-300 text-emerald-900",
 };
 
-function minutenSeit(iso: string): number {
-  return (Date.now() - new Date(iso).getTime()) / 60_000;
+/** Sekunden seit dem letzten erfolgreichen Datenabruf. */
+function sekundenSeit(zeitpunkt: number, jetzt: number): number {
+  if (!zeitpunkt) return 0;
+  return Math.max(0, Math.floor((jetzt - zeitpunkt) / 1000));
 }
 
 function uhrzeit(iso: string): string {
@@ -84,13 +87,30 @@ function signalTon() {
   }
 }
 
+/** Was der Signal-Schalter tatsaechlich leistet.
+ *  "ton"  = Erlaubnis fuer Benachrichtigungen fehlt noch, es piept nur.
+ *  "voll" = Ton und Browser-Benachrichtigung. */
+type SignalStufe = "aus" | "ton" | "voll";
+
 export default function SchnellanrufPage() {
   const queryClient = useQueryClient();
-  const [signalAn, setSignalAn] = useState(true);
+  const [signal, setSignal] = useState<SignalStufe>("aus");
   const [jetzt, setJetzt] = useState(() => Date.now());
   const bekannteIds = useRef<Set<string> | null>(null);
 
-  const { data, isLoading, isError, refetch, isFetching } =
+  // Beim Laden den echten Zustand uebernehmen, statt "an" zu behaupten.
+  // Browser verlangen fuer requestPermission() eine Nutzeraktion, deshalb kann
+  // hier nicht ungefragt nachgefragt werden — der Schalter zeigt stattdessen
+  // ehrlich an, dass bisher nur der Ton funktioniert.
+  useEffect(() => {
+    if (typeof Notification === "undefined") {
+      setSignal("ton");
+      return;
+    }
+    setSignal(Notification.permission === "granted" ? "voll" : "ton");
+  }, []);
+
+  const { data, isLoading, isError, refetch, isFetching, dataUpdatedAt } =
     useQuery<SpeedDialResponse>({
       queryKey: ["speed-dial"],
       queryFn: getSpeedDialLeads,
@@ -115,10 +135,10 @@ export default function SchnellanrufPage() {
     }
     const neue = data.leads.filter((l) => !bekannteIds.current!.has(l.id));
     bekannteIds.current = ids;
-    if (neue.length === 0 || !signalAn) return;
+    if (neue.length === 0 || signal === "aus") return;
 
     signalTon();
-    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+    if (signal === "voll" && typeof Notification !== "undefined" && Notification.permission === "granted") {
       const erster = neue[0];
       new Notification(
         neue.length === 1 ? "Neuer Lead" : `${neue.length} neue Leads`,
@@ -131,7 +151,7 @@ export default function SchnellanrufPage() {
         }
       );
     }
-  }, [data, signalAn]);
+  }, [data, signal]);
 
   const mutation = useMutation({
     mutationFn: ({ id, state }: { id: string; state: SpeedDialState | null }) =>
@@ -139,11 +159,24 @@ export default function SchnellanrufPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["speed-dial"] }),
   });
 
-  const benachrichtigungenAnfordern = async () => {
-    if (typeof Notification === "undefined") return;
-    if (Notification.permission === "default") await Notification.requestPermission();
-    setSignalAn(true);
+  /** Ein Klick fuehrt durch: aus -> Ton -> (Erlaubnis holen) -> voll -> aus. */
+  const signalUmschalten = async () => {
+    if (signal === "aus") {
+      setSignal("ton");
+      return;
+    }
+    if (signal === "ton" && typeof Notification !== "undefined") {
+      // Der Klick ist die geforderte Nutzeraktion — hier darf gefragt werden.
+      const antwort =
+        Notification.permission === "default"
+          ? await Notification.requestPermission()
+          : Notification.permission;
+      setSignal(antwort === "granted" ? "voll" : "aus");
+      return;
+    }
+    setSignal("aus");
   };
+
 
   const stats = data?.stats;
   const sla = data?.sla_minutes ?? 30;
@@ -185,27 +218,77 @@ export default function SchnellanrufPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => (signalAn ? setSignalAn(false) : benachrichtigungenAnfordern())}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition",
-              signalAn
-                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                : "border-gray-300 bg-white text-gray-600"
-            )}
-          >
-            {signalAn ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
-            {signalAn ? "Signal an" : "Signal aus"}
-          </button>
+          {/* Live-Anzeige statt Aktualisieren-Knopf: die Liste holt sich alle
+              10 Sekunden neue Daten, es gibt nichts zu druecken. Ein Klick
+              erzwingt trotzdem ein sofortiges Nachladen. */}
           <button
             onClick={() => refetch()}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-600"
+            title="Aktualisiert sich automatisch — klicken für sofort"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-500"
           >
-            <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
-            Aktualisieren
+            <span className="relative flex h-2 w-2">
+              <span
+                className={cn(
+                  "absolute inline-flex h-full w-full rounded-full bg-emerald-400",
+                  isFetching && "animate-ping"
+                )}
+              />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            Live
+            <span className="tabular-nums text-gray-400">
+              {sekundenSeit(dataUpdatedAt, jetzt)} s
+            </span>
+          </button>
+
+          <button
+            onClick={signalUmschalten}
+            title={
+              signal === "voll"
+                ? "Ton und Benachrichtigung aktiv"
+                : signal === "ton"
+                  ? "Nur Ton — klicken, um Benachrichtigungen zu erlauben"
+                  : "Kein Signal bei neuen Leads"
+            }
+            className={cn(
+              "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition",
+              signal === "voll"
+                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                : signal === "ton"
+                  ? "border-amber-300 bg-amber-50 text-amber-800"
+                  : "border-gray-300 bg-white text-gray-600"
+            )}
+          >
+            {signal === "aus" ? (
+              <BellOff className="h-4 w-4" />
+            ) : (
+              <Bell className="h-4 w-4" />
+            )}
+            {signal === "voll"
+              ? "Signal an"
+              : signal === "ton"
+                ? "Nur Ton"
+                : "Signal aus"}
+          </button>
+
+          <button
+            onClick={abmelden}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-600 hover:border-red-300 hover:text-red-700"
+          >
+            <LogOut className="h-4 w-4" />
+            Abmelden
           </button>
         </div>
       </div>
+
+      {signal === "ton" && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
+          Es piept nur — Browser-Benachrichtigungen sind noch nicht erlaubt.
+          Klick auf <span className="font-semibold">Nur Ton</span>, dann fragt
+          der Browser nach. Danach siehst du neue Leads auch, wenn der Tab im
+          Hintergrund liegt.
+        </div>
+      )}
 
       {/* Statistik */}
       {stats && (

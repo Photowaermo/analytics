@@ -17,9 +17,11 @@ import {
   Users,
   History,
   PhoneCall,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMode, AnalyticsMode } from "@/lib/mode-context";
+import { abmelden } from "@/lib/logout";
 
 // Navigation items per mode (relative paths within mode)
 const navItemsByMode: Record<AnalyticsMode, { path: string; label: string; icon: typeof LayoutDashboard }[]> = {
@@ -159,6 +161,14 @@ export function Sidebar() {
                 </Link>
               );
             })}
+
+            <button
+              onClick={abmelden}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-700"
+            >
+              <LogOut className="h-5 w-5" />
+              Abmelden
+            </button>
           </div>
         </nav>
       </aside>
