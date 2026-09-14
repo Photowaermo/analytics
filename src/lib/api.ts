@@ -86,8 +86,14 @@ export interface LeadJourney {
 }
 
 export interface Settings {
-  provider_prices: Record<string, number>;
+  // Optional, weil die Einstellungsseite nur noch eine Teilmenge schickt — der
+  // Endpunkt führt sie mit dem gespeicherten Rest zusammen.
+  provider_prices?: Record<string, number>;
   active_ad_platforms?: Record<string, boolean>;
+  // Liegen in core.app_settings statt in settings.json, weil das Lead-Routing
+  // sie von dort liest. Der Endpunkt reicht sie nur durch.
+  gewerbe_routing_enabled?: boolean;
+  gewerbe_campaign_markers?: string[];
   ampel_config?: {
     target_cpl: number;
     yellow_multiplier: number;

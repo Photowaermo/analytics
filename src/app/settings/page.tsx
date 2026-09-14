@@ -18,59 +18,51 @@ const AD_PLATFORMS = [
   { id: "twitter", label: "Twitter/X Ads", utmSources: ["twitter", "x", "tw"] },
 ];
 
+// Rückfall-Stichwörter, solange nichts gespeichert ist — dieselbe Liste wie
+// DEFAULT_GEWERBE_MARKERS in ingestor/product_helper.py.
+const DEFAULT_MARKERS = "gewerbe, b2b, commercial";
+
 export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
   const updateSettings = useUpdateSettings();
-  const [prices, setPrices] = useState<Record<string, string>>({});
   const [adPlatforms, setAdPlatforms] = useState<Record<string, boolean>>({});
+  const [gewerbeEnabled, setGewerbeEnabled] = useState(false);
+  const [markers, setMarkers] = useState<string>(DEFAULT_MARKERS);
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
-    if (settings?.provider_prices) {
-      const stringPrices: Record<string, string> = {};
-      Object.entries(settings.provider_prices).forEach(([key, value]) => {
-        stringPrices[key] = value.toString();
-      });
-      setPrices(stringPrices);
-    }
     if (settings?.active_ad_platforms) {
       setAdPlatforms(settings.active_ad_platforms);
     } else {
       // Default: only Meta is active
       setAdPlatforms({ meta: true });
     }
+    setGewerbeEnabled(!!settings?.gewerbe_routing_enabled);
+    setMarkers(
+      Array.isArray(settings?.gewerbe_campaign_markers) && settings.gewerbe_campaign_markers.length
+        ? settings.gewerbe_campaign_markers.join(", ")
+        : DEFAULT_MARKERS,
+    );
   }, [settings]);
-
-  const handlePriceChange = (provider: string, value: string) => {
-    setPrices((prev) => ({ ...prev, [provider]: value }));
-    setHasChanges(true);
-  };
 
   const handlePlatformToggle = (platformId: string, enabled: boolean) => {
     setAdPlatforms((prev) => ({ ...prev, [platformId]: enabled }));
     setHasChanges(true);
   };
 
-
   const handleSave = async () => {
-    const numericPrices: Record<string, number> = {};
-    Object.entries(prices).forEach(([key, value]) => {
-      numericPrices[key] = parseFloat(value) || 0;
-    });
-
+    // Nur die Felder schicken, die diese Seite anzeigt. Der Endpunkt führt sie
+    // mit dem Rest zusammen, statt ihn zu überschreiben — sonst gingen die
+    // Anbieter-Preise verloren, aus denen die Lead-Kosten gerechnet werden.
     await updateSettings.mutateAsync({
-      provider_prices: numericPrices,
       active_ad_platforms: adPlatforms,
+      gewerbe_routing_enabled: gewerbeEnabled,
+      gewerbe_campaign_markers: markers
+        .split(",")
+        .map((m) => m.trim().toLowerCase())
+        .filter(Boolean),
     });
     setHasChanges(false);
-  };
-
-  const handleAddProvider = () => {
-    const newProvider = prompt("Anbieter-Name eingeben:");
-    if (newProvider && !prices[newProvider.toLowerCase()]) {
-      setPrices((prev) => ({ ...prev, [newProvider.toLowerCase()]: "0" }));
-      setHasChanges(true);
-    }
   };
 
   return (
@@ -118,44 +110,64 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Provider Prices */}
+      {/* Lead-Segmentierung */}
       <Card>
         <CardHeader>
-          <CardTitle>Anbieter-Preise</CardTitle>
+          <CardTitle>Lead-Segmentierung (Privat / Gewerbe)</CardTitle>
           <CardDescription>
-            Legen Sie die Kosten pro Lead für jeden Anbieter fest. Diese Werte werden zur Berechnung anbieterspezifischer Metriken verwendet.
+            Wenn aktiv, wird jeder Lead als Gewerbe oder Privat eingestuft und nur an
+            Verkäufer mit passendem Segment verteilt. Aus = alle Verkäufer bekommen alle
+            Leads.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="py-8 text-center text-gray-500">Einstellungen werden geladen...</div>
           ) : (
-            <div className="space-y-4">
-              {Object.entries(prices).map(([provider, price]) => (
-                <div key={provider} className="flex items-center gap-4">
-                  <label className="w-32 text-sm font-medium text-gray-700 capitalize">
-                    {provider}
+            <div className="space-y-5">
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <div className="flex-1">
+                  <label htmlFor="gewerbe-routing" className="text-sm font-medium text-gray-900 cursor-pointer">
+                    Gewerbe-Routing aktiv
                   </label>
-                  <div className="relative flex-1 max-w-xs">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                      €
-                    </span>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={price}
-                      onChange={(e) => handlePriceChange(provider, e.target.value)}
-                      className="pl-8"
-                    />
-                  </div>
-                  <span className="text-sm text-gray-500">pro Lead</span>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Maßgeblich ist die Antwort im Formular (z. B. Eigenheim gegenüber
+                    Firmengebäude). Nur wenn die fehlt, entscheiden die Stichwörter unten.
+                  </p>
                 </div>
-              ))}
+                <Switch
+                  id="gewerbe-routing"
+                  checked={gewerbeEnabled}
+                  onCheckedChange={(checked) => {
+                    setGewerbeEnabled(checked);
+                    setHasChanges(true);
+                  }}
+                />
+              </div>
 
-              <Button variant="outline" onClick={handleAddProvider} className="mt-4">
-                + Anbieter hinzufügen
-              </Button>
+              <div>
+                <label htmlFor="gewerbe-markers" className="text-sm font-medium text-gray-700">
+                  Gewerbe-Stichwörter (kommagetrennt)
+                </label>
+                <Input
+                  id="gewerbe-markers"
+                  value={markers}
+                  onChange={(e) => {
+                    setMarkers(e.target.value);
+                    setHasChanges(true);
+                  }}
+                  placeholder={DEFAULT_MARKERS}
+                  disabled={!gewerbeEnabled}
+                  className="mt-1.5 max-w-md"
+                />
+                <p className="text-xs text-gray-500 mt-1.5">
+                  Rückfall, wenn das Formular keine Antwort zum Objekt liefert: Der Lead gilt
+                  dann als Gewerbe, sobald eines dieser Wörter im Kampagnen- oder
+                  Anzeigengruppen-Namen oder in den UTM-Feldern vorkommt. Der Formularname
+                  wird bewusst nicht durchsucht — er ist ein internes Label und stufte
+                  dadurch Privatkunden falsch ein.
+                </p>
+              </div>
             </div>
           )}
         </CardContent>
