@@ -553,3 +553,58 @@ export async function setSpeedDialState(
     body: JSON.stringify({ state, note: note ?? null }),
   });
 }
+
+// --- Besucher (Website-Traffic) ---------------------------------------------
+
+export interface TrafficDay {
+  date: string;
+  visitors: number;
+}
+
+export interface TrafficPage {
+  path: string;
+  name: string;
+  visitors: number;
+}
+
+export interface TrafficSource {
+  /** "Direkt", "Suchmaschinen", "Anzeigen", "Soziale Medien", "KI-Assistenten" oder "Andere Seiten". */
+  name: string;
+  share_pct: number;
+}
+
+export interface TrafficForm {
+  /** "Wärmepumpe", "Photovoltaik" oder "Beides". */
+  product: string;
+  /** Geräte, die das Formular im Zeitraum begonnen haben. */
+  started: number;
+  /** Davon mit Anfrage nach dem Beginn. */
+  submitted: number;
+  /** Fragen, bei denen Geräte stehen blieben, häufigste zuerst; leer, wenn niemand abbrach. */
+  dropoffs: { step: string; count: number }[];
+}
+
+export interface TrafficResponse {
+  start_date: string;
+  end_date: string;
+  visitors: number;
+  /** Gleich langer Zeitraum direkt vor start_date. */
+  visitors_previous: number;
+  leads: number;
+  /** null, wenn es im Zeitraum keine Besucher gab. */
+  leads_per_100_visitors: number | null;
+  /** Jeder Tag des Zeitraums, auch Tage ohne Besuch. */
+  daily: TrafficDay[];
+  landing_pages: TrafficPage[];
+  sources: TrafficSource[];
+  blog_articles: TrafficPage[];
+  /** Immer genau drei Einträge: Wärmepumpe, Photovoltaik, Beides — auch mit 0. */
+  forms: TrafficForm[];
+  /** Neuester geladener Datensatz, ISO mit Berliner Offset; null, solange rudder_raw.pages leer ist. */
+  as_of: string | null;
+}
+
+export async function getTraffic(startDate: string, endDate: string): Promise<TrafficResponse> {
+  const params = new URLSearchParams({ start_date: startDate, end_date: endDate });
+  return fetchAPI(`/traffic?${params.toString()}`);
+}

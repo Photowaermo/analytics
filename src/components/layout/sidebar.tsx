@@ -18,6 +18,7 @@ import {
   History,
   PhoneCall,
   LogOut,
+  Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMode, AnalyticsMode } from "@/lib/mode-context";
@@ -66,11 +67,13 @@ export function Sidebar() {
   // Build full href for mode items
   const getFullHref = (path: string) => `/${mode}${path ? `/${path}` : ""}`;
 
-  // Check if a mode item is active
-  const isModeItemActive = (path: string) => {
-    const fullHref = getFullHref(path);
-    return pathname === fullHref;
-  };
+  // Besucher steht in jedem Modus über der Modusliste: Website-Besuche hängen
+  // nicht am Analysemodus, gehören aber zur Auswertung und nicht zu den
+  // Werkzeugen unten.
+  const topNavItems = [
+    { href: "/besucher", label: "Besucher", icon: Globe },
+    ...modeNavItems.map((item) => ({ href: getFullHref(item.path), label: item.label, icon: item.icon })),
+  ];
 
   return (
     <>
@@ -116,14 +119,13 @@ export function Sidebar() {
         </div>
         <nav className="flex flex-col h-[calc(100vh-4rem)]">
           <div className="space-y-1 p-4 flex-1">
-            {modeNavItems.map((item) => {
-              const href = getFullHref(item.path);
-              const isActive = isModeItemActive(item.path);
+            {topNavItems.map((item) => {
+              const isActive = pathname === item.href;
               const Icon = item.icon;
               return (
                 <Link
-                  key={item.path}
-                  href={href}
+                  key={item.href}
+                  href={item.href}
                   onClick={() => setIsOpen(false)}
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",

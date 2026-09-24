@@ -23,6 +23,7 @@ import {
   getResponseTimes,
   getKanbanChanges,
   getKamMismatches,
+  getTraffic,
   type Settings,
 } from "./api";
 
@@ -58,6 +59,7 @@ export const queryKeys = {
   kanbanChanges: (startDate?: string, endDate?: string, seller?: string) =>
     ["kanbanChanges", startDate, endDate, seller] as const,
   kamMismatches: ["kamMismatches"] as const,
+  traffic: (startDate: string, endDate: string) => ["traffic", startDate, endDate] as const,
 };
 
 // Hooks
@@ -221,5 +223,15 @@ export function useSellerLeads(sellerEmail: string, startDate: string, endDate: 
     queryKey: queryKeys.sellerLeads(sellerEmail, startDate, endDate),
     queryFn: () => getSellerLeads(sellerEmail, startDate, endDate),
     enabled: !!sellerEmail,
+  });
+}
+
+export function useTraffic(startDate: string, endDate: string) {
+  return useQuery({
+    queryKey: queryKeys.traffic(startDate, endDate),
+    queryFn: () => getTraffic(startDate, endDate),
+    // Ein Wiederholversuch reicht — mit den drei Standardversuchen stünde bei
+    // einem Fehler sekundenlang nur das Skelett da, bevor die Fehlerkarte kommt.
+    retry: 1,
   });
 }

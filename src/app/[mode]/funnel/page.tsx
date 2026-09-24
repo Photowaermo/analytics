@@ -32,6 +32,9 @@ export default function FunnelPage() {
   const { data: funnel, isLoading, isError, refetch } = useFunnel(dateRange.startDate, dateRange.endDate, provider, platform, productParam);
 
   const totalVisitors = funnel?.[0]?.count || 0;
+  // Die erste Stufe zählt je nach Modus Besucher (Page View) oder Impressionen
+  // der Anzeigen — Seitenaufrufe sind es in keinem Fall.
+  const firstStepLabel = funnel?.[0]?.step_name === "Impressions" ? "Impressionen" : "Besucher";
   const totalLeads = funnel?.find((s) => s.step_name.toLowerCase().includes("lead"))?.count || 0;
   const totalSales = funnel?.[funnel.length - 1]?.count || 0;
   const overallConversion = totalVisitors > 0 ? (totalSales / totalVisitors) * 100 : 0;
@@ -62,7 +65,7 @@ export default function FunnelPage() {
           </>
         ) : (
           <>
-            <KpiCard title="Seitenaufrufe" value={formatNumber(totalVisitors)} />
+            <KpiCard title={firstStepLabel} value={formatNumber(totalVisitors)} />
             <KpiCard title="Generierte Leads" value={formatNumber(totalLeads)} />
             <KpiCard title="Abgeschlossene Verkäufe" value={formatNumber(totalSales)} />
             <KpiCard title="Gesamtkonversion" value={formatPercent(overallConversion)} />

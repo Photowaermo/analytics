@@ -1,6 +1,7 @@
 "use client";
 
 import { Megaphone, ShoppingCart, Globe, Layers, Check, ChevronDown, Package } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { useMode, modeConfig, AnalyticsMode } from "@/lib/mode-context";
 import { usePlatform, platformConfig, ALL_PLATFORMS } from "@/lib/platform-context";
@@ -29,10 +30,16 @@ const modeIcons: Record<AnalyticsMode, typeof Megaphone> = {
 
 export function Header() {
   const { view } = useView();
+  const pathname = usePathname();
   const { mode, setMode } = useMode();
   const { selectedPlatforms, togglePlatform, selectAll } = usePlatform();
   const { product, setProduct } = useProduct();
   const Icon = modeIcons[mode];
+
+  // Website-Besuche hängen weder am Modus noch an Plattform oder Produkt, und
+  // ein Klick auf den Modus würde die Seite verlassen (setMode navigiert nach
+  // /<modus>). Auf /besucher bleibt deshalb nur der Zeitraum.
+  const nurZeitraum = pathname === "/besucher";
 
   // Check if all platforms are selected
   const allSelected = selectedPlatforms.length === ALL_PLATFORMS.length;
@@ -51,7 +58,7 @@ export function Header() {
       {/* Spacer for mobile menu button */}
       <div className="w-10 lg:w-0" />
 
-      {view === "analytics" ? (
+      {nurZeitraum ? null : view === "analytics" ? (
         <>
           {/* Mode Selector + Platform Filter + Product Filter */}
           <div className="flex items-center gap-3">
