@@ -67,13 +67,20 @@ export function Sidebar() {
   // Build full href for mode items
   const getFullHref = (path: string) => `/${mode}${path ? `/${path}` : ""}`;
 
-  // Besucher steht in jedem Modus über der Modusliste: Website-Besuche hängen
-  // nicht am Analysemodus, gehören aber zur Auswertung und nicht zu den
-  // Werkzeugen unten.
-  const topNavItems = [
-    { href: "/besucher", label: "Besucher", icon: Globe },
-    ...modeNavItems.map((item) => ({ href: getFullHref(item.path), label: item.label, icon: item.icon })),
-  ];
+  // Besucher steht in jedem Modus direkt unter Leads (ohne Leads-Eintrag unter
+  // der Übersicht): Website-Besuche hängen nicht am Analysemodus, gehören aber
+  // zur Auswertung und nicht zu den Werkzeugen unten.
+  const topNavItems = modeNavItems.map((item) => ({
+    href: getFullHref(item.path),
+    label: item.label,
+    icon: item.icon,
+  }));
+  const leadsIndex = modeNavItems.findIndex((item) => item.path === "leads");
+  topNavItems.splice(leadsIndex === -1 ? 1 : leadsIndex + 1, 0, {
+    href: "/besucher",
+    label: "Besucher",
+    icon: Globe,
+  });
 
   return (
     <>
