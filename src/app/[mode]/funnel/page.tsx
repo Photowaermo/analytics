@@ -32,10 +32,9 @@ export default function FunnelPage() {
   const { data: funnel, isLoading, isError, refetch } = useFunnel(dateRange.startDate, dateRange.endDate, provider, platform, productParam);
 
   const totalVisitors = funnel?.[0]?.count || 0;
-  // Die erste Stufe zählt je nach Modus Besucher (Page View) oder Impressionen
-  // der Anzeigen — Seitenaufrufe sind es in keinem Fall.
-  const firstStepLabel = funnel?.[0]?.step_name === "Impressions" ? "Impressionen" : "Besucher";
-  const totalLeads = funnel?.find((s) => s.step_name.toLowerCase().includes("lead"))?.count || 0;
+  // Die erste Stufe zählt je nach Modus Besucher oder Impressionen der Anzeigen.
+  const firstStepLabel = funnel?.[0]?.step_name ?? "Besucher";
+  const totalLeads = funnel?.find((s) => s.step_name === "Leads")?.count || 0;
   const totalSales = funnel?.[funnel.length - 1]?.count || 0;
   const overallConversion = totalVisitors > 0 ? (totalSales / totalVisitors) * 100 : 0;
 
@@ -44,7 +43,7 @@ export default function FunnelPage() {
   if (isError) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Website-Funnel - {modeLabel}</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Funnel – {modeLabel}</h1>
         <ErrorCard message="Funnel-Daten konnten nicht geladen werden" onRetry={() => refetch()} />
       </div>
     );
@@ -52,7 +51,7 @@ export default function FunnelPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Website-Funnel - {modeLabel}</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Funnel – {modeLabel}</h1>
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -97,9 +96,15 @@ export default function FunnelPage() {
                     <span className="text-sm font-medium text-gray-700">{step.step_name}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-sm text-red-500 font-medium">
-                      -{formatNumber(dropoffCount)} ({step.dropoff_rate.toFixed(1)}%)
-                    </span>
+                    {/* Verkäufe zählen nach Abschlussdatum und können die
+                        Leads im Zeitraum übersteigen — dann kein Absprung. */}
+                    {dropoffCount > 0 ? (
+                      <span className="text-sm text-red-500 font-medium">
+                        -{formatNumber(dropoffCount)} ({step.dropoff_rate.toFixed(1)}%)
+                      </span>
+                    ) : (
+                      <span className="text-sm text-gray-400">–</span>
+                    )}
                   </div>
                 </div>
               );

@@ -253,7 +253,8 @@ export function getQuickToggleDates(
   const days = toggle === "3d" ? 3 : 7;
 
   return {
-    startDate: format(subDays(today, days), "yyyy-MM-dd"),
+    // Heute zählt mit: 3 Tage sind heute und die 2 davor.
+    startDate: format(subDays(today, days - 1), "yyyy-MM-dd"),
     endDate: format(today, "yyyy-MM-dd"),
   };
 }

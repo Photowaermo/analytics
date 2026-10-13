@@ -22,11 +22,15 @@ export default function ProvidersPage() {
   const totalLeads = providers?.reduce((sum, p) => sum + p.leads, 0) || 0;
   const totalSales = providers?.reduce((sum, p) => sum + p.sales, 0) || 0;
   const totalCost = providers?.reduce((sum, p) => sum + p.cost, 0) || 0;
-  const avgCpl = totalLeads > 0 ? totalCost / totalLeads : 0;
+  // Nur über Anbieter mit Kosten: Website- und Offline-Leads kosten nichts und
+  // drückten den Durchschnitt.
+  const paid = providers?.filter((p) => p.cost > 0) || [];
+  const paidLeads = paid.reduce((sum, p) => sum + p.leads, 0);
+  const avgCpl = paidLeads > 0 ? paid.reduce((sum, p) => sum + p.cost, 0) / paidLeads : null;
 
   const cplChartData = providers?.map((p) => ({
     name: p.provider.charAt(0).toUpperCase() + p.provider.slice(1),
-    value: p.cpl,
+    value: p.cpl ?? 0,
   })) || [];
 
   if (isError) {
@@ -95,6 +99,9 @@ export default function ProvidersPage() {
                     <TableCell className="text-right">{formatNumber(provider.sales)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(provider.cpl)}</TableCell>
                     <TableCell className="text-right">
+                      {provider.roas === null ? (
+                        <span className="text-gray-400">–</span>
+                      ) : (
                       <span
                         className={
                           provider.roas >= 3
@@ -106,6 +113,7 @@ export default function ProvidersPage() {
                       >
                         {provider.roas.toFixed(2)}x
                       </span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

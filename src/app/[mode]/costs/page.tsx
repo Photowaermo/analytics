@@ -62,15 +62,13 @@ export default function CostsPage() {
   const modeLeads = modeProviders.reduce((sum, p) => sum + p.leads, 0);
   const modeSales = modeProviders.reduce((sum, p) => sum + p.sales, 0);
   const modeCost = modeProviders.reduce((sum, p) => sum + p.cost, 0);
-  const modeCpl = modeLeads > 0 ? modeCost / modeLeads : 0;
-  const modeCps = modeSales > 0 ? modeCost / modeSales : 0;
+  // Ohne Leads bzw. Verkäufe gibt es keine Kosten pro Stück (Strich statt 0 €).
+  const modeCpl = modeLeads > 0 ? modeCost / modeLeads : null;
+  const modeCps = modeSales > 0 ? modeCost / modeSales : null;
 
-  // Calculate mode-specific revenue and ROAS from provider data
-  // Revenue = ROAS * Cost (since ROAS = Revenue / Cost)
-  const modeRoas = modeProviders.length > 0
-    ? modeProviders.reduce((sum, p) => sum + (p.roas * p.cost), 0) / modeCost
-    : 0;
-  const modeRevenue = modeProviders.reduce((sum, p) => sum + (p.roas * p.cost), 0);
+  const modeRevenue = modeProviders.reduce((sum, p) => sum + p.revenue, 0);
+  // Ohne Kosten gibt es keinen ROAS.
+  const modeRoas = modeCost > 0 ? modeRevenue / modeCost : null;
   const modeProfit = modeRevenue - modeCost;
   const modeMargin = modeRevenue > 0 ? (modeProfit / modeRevenue) * 100 : 0;
 
@@ -78,7 +76,7 @@ export default function CostsPage() {
   const roasChartData = modeProviders.map((p) => ({
     name: p.provider.charAt(0).toUpperCase() + p.provider.slice(1),
     fullName: p.provider.charAt(0).toUpperCase() + p.provider.slice(1),
-    value: p.roas,
+    value: p.roas ?? 0,
   }));
 
   if (overviewError) {
@@ -145,8 +143,16 @@ export default function CostsPage() {
             <>
               <KpiCard
                 title="ROAS"
-                value={`${modeRoas.toFixed(2)}x`}
-                subtitle={modeRoas >= 3 ? "Hervorragende Performance" : modeRoas >= 1 ? "Positiver ROI" : "Unter Rentabilität"}
+                value={modeRoas === null ? "–" : `${modeRoas.toFixed(2)}x`}
+                subtitle={
+                  modeRoas === null
+                    ? "Keine Kosten im Zeitraum"
+                    : modeRoas >= 3
+                      ? "Hervorragende Performance"
+                      : modeRoas >= 1
+                        ? "Positiver ROI"
+                        : "Unter Rentabilität"
+                }
               />
               <KpiCard
                 title="Kosten pro Lead"
@@ -192,14 +198,14 @@ export default function CostsPage() {
                   {formatCurrency(modeProfit)}
                 </span>
               </div>
-              {modeRoas > 0 && (
+              {modeRoas !== null && modeRoas > 0 && (
                 <div className="mt-4 p-4 rounded-lg bg-gray-50">
                   <div className="text-sm text-gray-500">
                     Für jeden {formatCurrency(1)} Werbeausgabe erhalten Sie {formatCurrency(modeRoas)} zurück.
                   </div>
                 </div>
               )}
-              {modeRoas === 0 && modeSales === 0 && (
+              {!modeRoas && modeSales === 0 && (
                 <div className="mt-4 p-4 rounded-lg bg-yellow-50 border border-yellow-200">
                   <div className="text-sm text-yellow-800">
                     Noch keine Verkäufe aus Werbeanzeigen. ROAS wird berechnet sobald Leads konvertieren.

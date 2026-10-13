@@ -47,10 +47,16 @@ export interface Attribution {
 export interface Provider {
   provider: string;
   leads: number;
+  /** Davon heute gewonnen (Grundlage der Gewinnquote). */
+  won_of_leads: number;
+  /** Verkäufe nach Abschlussdatum, auch von älteren Leads. */
   sales: number;
   cost: number;
-  cpl: number;
-  roas: number;
+  revenue: number;
+  /** null ohne Leads. */
+  cpl: number | null;
+  /** null ohne Kosten. */
+  roas: number | null;
 }
 
 export interface Lead {
@@ -578,8 +584,10 @@ export interface TrafficForm {
   product: string;
   /** Geräte, die das Formular im Zeitraum begonnen haben. */
   started: number;
-  /** Davon mit Anfrage nach dem Beginn. */
+  /** Davon mit Angebotsanfrage in der Datenbank nach dem Beginn. */
   submitted: number;
+  /** Anfragen von Geräten ohne Browser-Tracking; in started und submitted enthalten. */
+  untracked: number;
   /** Fragen, bei denen Geräte stehen blieben, häufigste zuerst; leer, wenn niemand abbrach. */
   dropoffs: { step: string; count: number }[];
 }

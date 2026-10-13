@@ -112,7 +112,7 @@ export default function LeadsPage() {
   const { product } = useProduct();
   const productParam = getProductParam(product) || undefined;
   const segmentParam = segmentFilter !== "all" ? segmentFilter : undefined;
-  const { data: leads, isLoading, isError, refetch } = useJourneys(1000, 0, undefined, undefined, dateRange.startDate, dateRange.endDate, productParam, segmentParam);
+  const { data: leads, isLoading, isError, refetch } = useJourneys(10000, 0, undefined, undefined, dateRange.startDate, dateRange.endDate, productParam, segmentParam);
   const { data: journeyDetail, isLoading: detailLoading, isError: detailError } = useJourneyDetail(selectedLeadId || "");
   const { data: leadRawData, isLoading: rawLoading } = useLeadRaw(rawLeadId || "");
   const { data: statusHistory, isLoading: statusHistoryLoading } = useStatusHistory(statusHistoryLeadId || "");

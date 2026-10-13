@@ -44,7 +44,7 @@ export default function LeadQualityPage() {
   const cplChartData = purchasedProviders.map((p) => ({
     name: p.provider.charAt(0).toUpperCase() + p.provider.slice(1),
     fullName: p.provider.charAt(0).toUpperCase() + p.provider.slice(1),
-    value: p.cpl,
+    value: p.cpl ?? 0,
   }));
 
   if (isError) {
@@ -79,7 +79,7 @@ export default function LeadQualityPage() {
             <KpiCard
               title="Konvertiert"
               value={formatNumber(totalSales)}
-              subtitle={`${formatPercent(conversionRate)} Konversionsrate`}
+              subtitle={`${formatPercent(conversionRate)} je neuem Lead`}
               icon={CheckCircle}
             />
             <KpiCard
@@ -131,7 +131,7 @@ export default function LeadQualityPage() {
                 <TableHead>Anbieter</TableHead>
                 <TableHead className="text-right">Leads</TableHead>
                 <TableHead className="text-right">Verkäufe</TableHead>
-                <TableHead className="text-right">Konversion</TableHead>
+                <TableHead className="text-right">Verkäufe je Lead</TableHead>
                 <TableHead className="text-right">Kosten</TableHead>
                 <TableHead className="text-right">CPL</TableHead>
                 <TableHead className="text-right">Qualität</TableHead>
@@ -188,7 +188,7 @@ export default function LeadQualityPage() {
           <div>
             <h4 className="font-medium text-blue-900">Qualitätsbewertung</h4>
             <p className="text-sm text-blue-800 mt-1">
-              Die Qualität wird basierend auf der Konversionsrate bewertet:
+              Die Qualität wird anhand der Verkäufe je Lead bewertet:
               <span className="font-medium"> Gut</span> (≥5%),
               <span className="font-medium"> Mittel</span> (2-5%),
               <span className="font-medium"> Niedrig</span> (&lt;2%).

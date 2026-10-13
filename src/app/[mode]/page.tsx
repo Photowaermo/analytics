@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency, formatNumber, formatPercent, translateToGerman } from "@/lib/utils";
+import { differenceInCalendarDays, parseISO } from "date-fns";
 
 // Map mode to provider parameter for API
 const modeToProvider: Record<string, string> = {
@@ -82,13 +83,21 @@ export default function OverviewPage() {
   const modeLeads = modeProviders.reduce((sum, p) => sum + p.leads, 0);
   const modeSales = modeProviders.reduce((sum, p) => sum + p.sales, 0);
   const modeCost = modeProviders.reduce((sum, p) => sum + p.cost, 0);
-  const modeCpl = modeLeads > 0 ? modeCost / modeLeads : 0;
+  const modeCpl = modeLeads > 0 ? modeCost / modeLeads : null;
+  // Gewinnquote: gewonnen unter den im Zeitraum angelegten Leads.
+  // Verkäufe je neuem Lead: Verkäufe im Zeitraum (auch von älteren Leads)
+  // geteilt durch die neuen Leads im Zeitraum.
+  const modeConversion = modeLeads > 0 ? (modeSales / modeLeads) * 100 : 0;
+  // Gewinnquote: gewonnen unter den Leads aus dem Zeitraum. Erst ab 90 Tagen
+  // aussagekräftig, vorher hatten die Leads keine Zeit abzuschließen.
+  const modeWonOfLeads = modeProviders.reduce((sum, p) => sum + p.won_of_leads, 0);
+  const zeigeGewinnquote =
+    differenceInCalendarDays(parseISO(dateRange.endDate), parseISO(dateRange.startDate)) + 1 >= 90;
+  const gewinnquoteText = (gewonnen: number, leads: number) =>
+    zeigeGewinnquote && leads > 0 ? `Gewinnquote ${formatPercent((gewonnen / leads) * 100)}` : undefined;
 
-  // Calculate mode-specific revenue and ROAS from provider data
-  const modeRoas = modeCost > 0
-    ? modeProviders.reduce((sum, p) => sum + (p.roas * p.cost), 0) / modeCost
-    : 0;
-  const modeRevenue = modeProviders.reduce((sum, p) => sum + (p.roas * p.cost), 0);
+  const modeRevenue = modeProviders.reduce((sum, p) => sum + p.revenue, 0);
+  const modeRoas = modeCost > 0 ? modeRevenue / modeCost : 0;
   const modeProfit = modeRevenue - modeCost;
   const modeMargin = modeRevenue > 0 ? (modeProfit / modeRevenue) * 100 : 0;
 
@@ -132,7 +141,8 @@ export default function OverviewPage() {
     const totalCost = overview?.total_spend || 0;
     const totalRevenue = overview?.total_revenue || 0;
     const totalProfit = overview?.profit || 0;
-    const conversionRate = overview?.conversion_rate || 0;
+    const conversionRate = totalLeads > 0 ? (totalSales / totalLeads) * 100 : 0;
+    const gewinnquote = overview?.conversion_rate || 0;
     const overallRoas = overview?.roas || 0;
 
     // Provider data for charts
@@ -141,6 +151,7 @@ export default function OverviewPage() {
     // Category breakdown (use dynamic adProviders for ads)
     const purchasedProviders = ["bildleads", "wattfox", "eza", "interleads"];
     const organicProviders = ["website"];
+    const knownProviders = [...adProviders, ...purchasedProviders, ...organicProviders];
 
     const getProvidersByCategory = (categoryProviders: string[]) =>
       allProviders.filter(p => categoryProviders.includes(p.provider.toLowerCase()));
@@ -148,6 +159,8 @@ export default function OverviewPage() {
     const adsData = getProvidersByCategory(adProviders);
     const purchasedData = getProvidersByCategory(purchasedProviders);
     const organicData = getProvidersByCategory(organicProviders);
+    // Alles Übrige (Offline, Empfehlungen, …), damit die Zeilen „Gesamt" ergeben.
+    const offlineData = allProviders.filter(p => !knownProviders.includes(p.provider.toLowerCase()));
 
     // Calculate category metrics
     const categoryMetrics = [
@@ -156,21 +169,32 @@ export default function OverviewPage() {
         leads: adsData.reduce((sum, p) => sum + p.leads, 0),
         sales: adsData.reduce((sum, p) => sum + p.sales, 0),
         cost: adsData.reduce((sum, p) => sum + p.cost, 0),
-        revenue: adsData.reduce((sum, p) => sum + (p.roas * p.cost), 0),
+        revenue: adsData.reduce((sum, p) => sum + p.revenue, 0),
+        won_of_leads: adsData.reduce((sum, p) => sum + p.won_of_leads, 0),
       },
       {
         name: "Gekaufte Leads",
         leads: purchasedData.reduce((sum, p) => sum + p.leads, 0),
         sales: purchasedData.reduce((sum, p) => sum + p.sales, 0),
         cost: purchasedData.reduce((sum, p) => sum + p.cost, 0),
-        revenue: purchasedData.reduce((sum, p) => sum + (p.roas * p.cost), 0),
+        revenue: purchasedData.reduce((sum, p) => sum + p.revenue, 0),
+        won_of_leads: purchasedData.reduce((sum, p) => sum + p.won_of_leads, 0),
       },
       {
         name: "Organisch",
         leads: organicData.reduce((sum, p) => sum + p.leads, 0),
         sales: organicData.reduce((sum, p) => sum + p.sales, 0),
         cost: 0, // Organic has no cost
-        revenue: organicData.reduce((sum, p) => sum + (p.roas * p.cost), 0),
+        revenue: organicData.reduce((sum, p) => sum + p.revenue, 0),
+        won_of_leads: organicData.reduce((sum, p) => sum + p.won_of_leads, 0),
+      },
+      {
+        name: "Offline",
+        leads: offlineData.reduce((sum, p) => sum + p.leads, 0),
+        sales: offlineData.reduce((sum, p) => sum + p.sales, 0),
+        cost: offlineData.reduce((sum, p) => sum + p.cost, 0),
+        revenue: offlineData.reduce((sum, p) => sum + p.revenue, 0),
+        won_of_leads: offlineData.reduce((sum, p) => sum + p.won_of_leads, 0),
       },
     ].map(cat => ({
       ...cat,
@@ -228,8 +252,9 @@ export default function OverviewPage() {
                 icon={ShoppingCart}
               />
               <KpiCard
-                title="Konversionsrate"
+                title="Verkäufe je neuem Lead"
                 value={formatPercent(conversionRate)}
+                subtitle={zeigeGewinnquote ? `Gewinnquote ${formatPercent(gewinnquote)}` : undefined}
                 icon={Percent}
               />
               <KpiCard
@@ -307,7 +332,7 @@ export default function OverviewPage() {
                   <TableHead>Kategorie</TableHead>
                   <TableHead className="text-right">Leads</TableHead>
                   <TableHead className="text-right">Verkäufe</TableHead>
-                  <TableHead className="text-right">Konversion</TableHead>
+                  <TableHead className="text-right">Verkäufe je Lead</TableHead>
                   <TableHead className="text-right">Kosten</TableHead>
                   <TableHead className="text-right">Umsatz</TableHead>
                   <TableHead className="text-right">Gewinn</TableHead>
@@ -418,8 +443,9 @@ export default function OverviewPage() {
                 icon={Target}
               />
               <KpiCard
-                title="Konversionsrate"
-                value={formatPercent(modeLeads > 0 ? (modeSales / modeLeads) * 100 : 0)}
+                title="Verkäufe je neuem Lead"
+                value={formatPercent(modeConversion)}
+                subtitle={gewinnquoteText(modeWonOfLeads, modeLeads)}
                 icon={Percent}
               />
             </>
@@ -467,7 +493,7 @@ export default function OverviewPage() {
     const cplChartData = modeProviders.map((p) => ({
       name: p.provider.charAt(0).toUpperCase() + p.provider.slice(1),
       fullName: p.provider.charAt(0).toUpperCase() + p.provider.slice(1),
-      value: p.cpl,
+      value: p.cpl ?? 0,
     }));
 
     return (
@@ -493,7 +519,7 @@ export default function OverviewPage() {
               <KpiCard
                 title="Verkäufe"
                 value={formatNumber(modeSales)}
-                subtitle={`${formatPercent(modeLeads > 0 ? (modeSales / modeLeads) * 100 : 0)} Konversion`}
+                subtitle={`${formatPercent(modeConversion)} je neuem Lead`}
                 icon={ShoppingCart}
               />
               <KpiCard
@@ -563,7 +589,7 @@ export default function OverviewPage() {
                   <TableHead>Anbieter</TableHead>
                   <TableHead className="text-right">Leads</TableHead>
                   <TableHead className="text-right">Verkäufe</TableHead>
-                  <TableHead className="text-right">Konversion</TableHead>
+                  <TableHead className="text-right">Verkäufe je Lead</TableHead>
                   <TableHead className="text-right">Kosten</TableHead>
                   <TableHead className="text-right">CPL</TableHead>
                   <TableHead className="text-right">Qualität</TableHead>
@@ -619,7 +645,7 @@ export default function OverviewPage() {
             <div>
               <h4 className="font-medium text-blue-900">Qualitätsbewertung</h4>
               <p className="text-sm text-blue-800 mt-1">
-                Die Qualität wird basierend auf der Konversionsrate bewertet:
+                Die Qualität wird anhand der Verkäufe je Lead bewertet:
                 <span className="font-medium"> Gut</span> (≥5%),
                 <span className="font-medium"> Mittel</span> (2-5%),
                 <span className="font-medium"> Niedrig</span> (&lt;2%).
@@ -658,8 +684,9 @@ export default function OverviewPage() {
               icon={ShoppingCart}
             />
             <KpiCard
-              title="Konversionsrate"
-              value={formatPercent(modeLeads > 0 ? (modeSales / modeLeads) * 100 : 0)}
+              title="Verkäufe je neuem Lead"
+              value={formatPercent(modeConversion)}
+              subtitle={gewinnquoteText(modeWonOfLeads, modeLeads)}
               icon={Percent}
             />
             <KpiCard

@@ -54,7 +54,7 @@ export default function ChangesPage() {
   const { data: changes, isLoading, isError, refetch } = useStatusChanges(
     dateRange.startDate,
     dateRange.endDate,
-    200
+    10000
   );
 
   // Nur relevante Status: Termin gebucht, storniert, gewonnen, verloren

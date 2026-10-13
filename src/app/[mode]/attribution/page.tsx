@@ -611,7 +611,7 @@ export default function AttributionPage() {
                       )}
                       <TableCell className="text-right">{formatNumber(item.leads)}</TableCell>
                       <TableCell className="text-right">{formatNumber(item.sales)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(item.cpl)}</TableCell>
+                      <TableCell className="text-right">{item.leads > 0 ? formatCurrency(item.cpl) : "–"}</TableCell>
                       <TableCell className="text-right">
                         <span
                           className={
@@ -746,7 +746,7 @@ export default function AttributionPage() {
                       <TableCell className="text-right">{formatCurrency(item.spend)}</TableCell>
                       <TableCell className="text-right">{formatNumber(item.leads)}</TableCell>
                       <TableCell className="text-right">{formatNumber(item.sales)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(item.cpl)}</TableCell>
+                      <TableCell className="text-right">{item.leads > 0 ? formatCurrency(item.cpl) : "–"}</TableCell>
                       <TableCell className="text-right">
                         <span
                           className={

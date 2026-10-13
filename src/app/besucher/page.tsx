@@ -183,6 +183,7 @@ const FORMULAR_RASTER =
   "grid grid-cols-[minmax(0,1fr)_5rem_5rem] items-baseline gap-x-4 sm:grid-cols-[minmax(0,1fr)_5rem_5rem_minmax(0,1fr)] sm:gap-x-6";
 
 function Angebotsformular({ forms }: { forms: TrafficForm[] }) {
+  const ohneTracking = forms.reduce((summe, f) => summe + f.untracked, 0);
   return (
     <div className={KARTE}>
       <h3 className="mb-3 text-lg font-semibold text-gray-900">Angebotsformular</h3>
@@ -238,6 +239,12 @@ function Angebotsformular({ forms }: { forms: TrafficForm[] }) {
           );
         })}
       </div>
+      {ohneTracking > 0 && (
+        <p className="mt-3 text-xs text-gray-500">
+          Darin {formatNumber(ohneTracking)} {ohneTracking === 1 ? "Anfrage" : "Anfragen"} von Geräten ohne Tracking
+          (z. B. Werbeblocker).
+        </p>
+      )}
     </div>
   );
 }
@@ -250,7 +257,7 @@ function Inhalt({ data }: { data: TrafficResponse }) {
     <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <BesucherKachel besucher={data.visitors} vorher={data.visitors_previous} />
-        <KpiCard title="Anfragen" value={formatNumber(data.leads)} />
+        <KpiCard title="Angebotsanfragen" value={formatNumber(data.leads)} />
         <KpiCard title="Anfragen pro 100 Besucher" value={pro100} />
       </div>
 

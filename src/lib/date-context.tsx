@@ -38,9 +38,10 @@ function getPresetDates(preset: DatePreset): DateRange {
         endDate: format(endOfDay(yesterday), formatStr),
       };
     }
+    // Heute zählt mit: 7 Tage sind heute und die 6 davor.
     case "7d":
       return {
-        startDate: format(subDays(today, 7), formatStr),
+        startDate: format(subDays(today, 6), formatStr),
         endDate: format(today, formatStr),
       };
     case "all":
@@ -51,7 +52,7 @@ function getPresetDates(preset: DatePreset): DateRange {
     case "30d":
     default:
       return {
-        startDate: format(subDays(today, 30), formatStr),
+        startDate: format(subDays(today, 29), formatStr),
         endDate: format(today, formatStr),
       };
   }

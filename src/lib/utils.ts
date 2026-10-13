@@ -6,7 +6,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // Use manual formatting to avoid hydration mismatches between server and client
-export function formatCurrency(value: number): string {
+export function formatCurrency(value: number | null | undefined): string {
+  // Ohne Wert (z. B. Kosten pro Lead ohne Leads) ein Strich statt 0 €.
+  if (value === null || value === undefined || !Number.isFinite(value)) return "–";
   const formatted = value.toFixed(2).replace(".", ",");
   // Add thousands separator
   const parts = formatted.split(",");
